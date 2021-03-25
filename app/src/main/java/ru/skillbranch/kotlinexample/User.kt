@@ -129,6 +129,12 @@ class User private constructor(
         else throw IllegalAccessException("The entered password does not match the current password")
     }
 
+    fun changeAccessCode(): Unit {
+        val code = generateAccessCode()
+        passwordHash = encrypt(code)
+        accessCode = code
+    }
+
     companion object Factory {
         fun makeUser(
             fullName: String,
@@ -137,22 +143,22 @@ class User private constructor(
             phone: String? = null
         ) : User {
             val (firstName, lastName) = fullName.fullNameToPair()
-            return when{
+            return when {
                 !phone.isNullOrBlank() -> User(firstName, lastName, phone)
                 !email.isNullOrBlank() -> User(firstName, lastName, email, password)
                 else -> throw IllegalArgumentException("Email or phone must be not null or blank")
             }
         }
-    }
 
-    // Возвращает из полного имени - пару(имя, фамилия)
-    private fun String.fullNameToPair(): Pair<String, String?> {
-        return this.split(" ").filter { it.isNotBlank() }.run {
-            when(size) {
-                1 -> first() to null
-                2 -> first() to last()
-                else -> throw IllegalArgumentException("Full name must contain only first name and last name, " +
-                        "current split result ${this@fullNameToPair}")
+        // Возвращает из полного имени - пару(имя, фамилия)
+        private fun String.fullNameToPair(): Pair<String, String?> {
+            return this.split(" ").filter { it.isNotBlank() }.run {
+                when(size) {
+                    1 -> first() to null
+                    2 -> first() to last()
+                    else -> throw IllegalArgumentException("Full name must contain only first name and last name, " +
+                            "current split result ${this@fullNameToPair}")
+                }
             }
         }
     }
