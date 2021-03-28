@@ -1,6 +1,7 @@
 package ru.skillbranch.kotlinexample
 
 import androidx.annotation.VisibleForTesting
+import ru.skillbranch.kotlinexample.UserHolder.toNormalizedLogin
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -74,17 +75,22 @@ class User private constructor(
         check(firstName.isNotBlank()) { "First name must not be blank" }
         check(!email.isNullOrBlank() || !rawPhone.isNullOrBlank()) { "Email or Phone must not be null or blank" }
 
-        phone = rawPhone
-        login = email ?: phone!!
+        phone = rawPhone?.toNormalizedLogin()
+        login = if (email.isNullOrBlank()) {
+            checkPhone(phone!!)
+            phone!!
+        } else {
+            email
+        }
 
         userInfo = """
-            firstName: $firstName,
-            lastName: $lastName,
-            login: $login,
-            fullName: $fullName,
-            initials: $initials,
-            email: $email,
-            phone: $phone,
+            firstName: $firstName
+            lastName: $lastName
+            login: $login
+            fullName: $fullName
+            initials: $initials
+            email: $email
+            phone: $phone
             meta: $meta
         """.trimIndent()
     }
@@ -145,7 +151,7 @@ class User private constructor(
             val (firstName, lastName) = fullName.fullNameToPair()
             return when {
                 !phone.isNullOrBlank() -> User(firstName, lastName, phone)
-                !email.isNullOrBlank() -> User(firstName, lastName, email, password)
+                !email.isNullOrBlank() -> User(firstName, lastName, email, password = password!!)
                 else -> throw IllegalArgumentException("Email or phone must be not null or blank")
             }
         }
@@ -162,4 +168,12 @@ class User private constructor(
             }
         }
     }
+    private fun checkPhone(phone: String): Boolean {
+        return when {
+            """^\+\d((\d{3})|(\(\d{3}\)))\d{3}[-]?\d{2}[-]?\d{2}$""".toRegex()
+                    .containsMatchIn(phone) -> true
+            else -> throw IllegalArgumentException("Enter a valid phone number starting with a + and containing 11 digits")
+        }
+    }
+
 }

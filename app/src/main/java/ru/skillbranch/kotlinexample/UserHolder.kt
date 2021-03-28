@@ -25,15 +25,16 @@ object UserHolder {
         }
     }
 
-    fun loginUser(login: String, password: String): String? =
-            map[login.trim()]?.let {
-                if (it.checkPassword(password)) it.userInfo
-                else null
-            }
+    fun loginUser(login: String, password: String): String? {
+        return map[login.toNormalizedLogin()]?.run {
+            if (checkPassword(password)) this.userInfo
+            else null
+        }
+    }
 
     // Запрос нового кода авторизации по номеру телефона
     fun requestAccessCode(login: String) : Unit {
-        map[login]?.changeAccessCode()
+        map[login.toNormalizedLogin()]?.changeAccessCode()
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.NONE)
