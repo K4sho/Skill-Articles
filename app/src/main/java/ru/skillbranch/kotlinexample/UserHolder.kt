@@ -20,7 +20,7 @@ object UserHolder {
     fun registerUserByPhone(fullName: String, rawPhone: String): User {
         return User.makeUser(fullName = fullName, phone = rawPhone).also { user ->
             map[user.login]
-                    ?.let { throw IllegalArgumentException("Enter a valid phone number starting with a + and containing 11 digits") }
+                    ?.let { throw IllegalArgumentException("A user with this phone already exists") }
                     ?: let { map[user.login] = user }
         }
     }
