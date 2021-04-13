@@ -68,7 +68,8 @@ class ArticleViewModel(private val articleId: String) : BaseViewModel<ArticleSta
     }
 
     fun handleNightMode() {
-        repository.updateSettings(appSettings = AppSettings(isDarkMode = true))
+        val mode = currentState.toAppSettings()
+        repository.updateSettings(mode.copy(isDarkMode = !mode.isDarkMode))
     }
 
     fun handleUpText() {
@@ -76,7 +77,7 @@ class ArticleViewModel(private val articleId: String) : BaseViewModel<ArticleSta
     }
 
     fun handleDownText() {
-        repository.updateSettings(currentState.toAppSettings().copy(isBigText = true))
+        repository.updateSettings(currentState.toAppSettings().copy(isBigText = false))
     }
 
     fun handleBookmark() {

@@ -2,9 +2,12 @@ package ru.skillbranch.skillarticles.ui
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.Menu
 import android.widget.ImageView
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProviders
+import com.google.android.material.snackbar.Snackbar
 import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.viewmodels.ArticleState
 import ru.skillbranch.skillarticles.viewmodels.ArticleViewModel
@@ -35,12 +38,61 @@ class RootActivity : AppCompatActivity() {
         }
     }
 
-    private fun renderUi(state: ArticleState?) {
-        TODO("Not yet implemented")
+    /**
+     * Метод для отрисовки всех элементов экрана, согласно текущему стэйту
+     */
+    private fun renderUi(state: ArticleState) {
+        btn_settings.isChecked = state.isShowMenu
+        if (state.isShowMenu) submenu.open() else submenu.close()
+        btn_like.isChecked = state.isLike
+        btn_bookmark.isChecked = state.isBookmark
+        switch_mode.isChecked = state.isDarkMode
+        delegate.localNightMode =
+                if (state.isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+
+        if (state.isBigText) {
+            tv_text_content.textSize = 18f
+            btn_text_up.isChecked = true
+            btn_text_down.isChecked = false
+        } else {
+            tv_text_content.textSize = 14f
+            btn_text_up.isChecked = true
+            btn_text_down.isChecked = false
+        }
+
+        tv_text_content.text = if (state.isLoadingContent) "loading" else state.content.first() as String
+
+        toolbar.title = state.title ?: "Skill Articles"
+        toolbar.subtitle = state.category ?: "Loading..."
+        if (state.categoryIcon != null) toolbar.logo = getDrawable(state.categoryIcon as Int)
     }
 
+    /**
+     * Метод для отрисовки уведомлений для пользователя с помощью Snackbar
+     */
     private fun renderNotification(notify: Notify) {
-        TODO("Not yet implemented")
+        // Привязываем вывод снэкбара к боттомбару
+        val snackbar = Snackbar.make(coordinator_container, notify.message, Snackbar.LENGTH_LONG).setAnchorView(bottombar)
+        when(notify) {
+            is Notify.ActionMessage -> {
+                with(snackbar) {
+                    setActionTextColor(getColor(R.color.color_accent_dark))
+                    setAction(notify.actionLabel) { notify.actionHandler.invoke() }
+                }
+            }
+            is Notify.ErrorMessage -> {
+                with(snackbar) {
+                    setBackgroundTint(getColor(R.color.design_default_color_error))
+                    setTextColor(getColor(android.R.color.white))
+                    setActionTextColor(getColor(android.R.color.white))
+                    setAction(notify.errLabel) { notify.errHandler?.invoke() }
+                }
+            }
+            is Notify.TextMessage -> {
+                //
+            }
+        }
+        snackbar.show()
     }
 
     private fun setupBottomBar() {
@@ -68,5 +120,11 @@ class RootActivity : AppCompatActivity() {
             it.marginEnd = this.dpToIntPx(16)
             logo.layoutParams = it
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_search, menu)
+
+        return super.onCreateOptionsMenu(menu)
     }
 }

@@ -19,6 +19,7 @@ object ArticleRepository {
     }
 
     fun getAppSettings(): LiveData<AppSettings> = local.getAppSettings() //from preferences
+
     fun updateSettings(appSettings: AppSettings) {
         local.updateAppSettings(appSettings)
     }
