@@ -2,8 +2,10 @@ package ru.skillbranch.skillarticles.ui
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.widget.ImageView
+import android.widget.SearchView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProviders
@@ -124,6 +126,42 @@ class RootActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_search, menu)
+        val menuItem = menu?.findItem(R.id.action_search)
+        val searchView = menuItem?.actionView as? SearchView
+
+        searchView?.setOnSearchClickListener {
+            Log.e("SearchView", "isSearchModeTrue")
+            viewModel.handleSearchMode(true)
+        }
+
+        searchView?.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
+            override fun onQueryTextSubmit(p0: String?): Boolean {
+                searchView.clearFocus()
+                viewModel.handleSearch(p0)
+                return false
+            }
+
+            override fun onQueryTextChange(p0: String?): Boolean {
+                if (!p0.isNullOrBlank()) {
+                    viewModel.handleSearch(p0)
+                }
+                return false
+            }
+
+        })
+
+        searchView?.setOnQueryTextFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                viewModel.handleSearchMode(true)
+            }
+        }
+
+        if (viewModel.currentState.isSearch) {
+            Log.e("SearchView", "isSearch")
+            menuItem?.expandActionView()
+            searchView?.onActionViewExpanded()
+            searchView?.setQuery(viewModel.currentState.searchQuery, true)
+        }
 
         return super.onCreateOptionsMenu(menu)
     }
