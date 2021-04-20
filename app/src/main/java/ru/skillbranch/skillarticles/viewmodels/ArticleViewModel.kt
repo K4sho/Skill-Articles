@@ -28,11 +28,12 @@ class ArticleViewModel(private val articleId: String) : BaseViewModel<ArticleSta
             article, state ->
             article ?: return@subscribeOnDataSource null
             state.copy(
-                author = article.author,
-                date = article.date.format(),
-                title = article.title,
-                category = article.category,
-                categoryIcon = article.categoryIcon
+                    shareLink = article.shareLink,
+                    title = article.title,
+                    author = article.author,
+                    category = article.category,
+                    categoryIcon = article.categoryIcon,
+                    date = article.date.format()
             )
         }
 
