@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.widget.ImageView
-import android.widget.SearchView
+import androidx.appcompat.widget.SearchView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProviders
@@ -130,7 +130,6 @@ class RootActivity : AppCompatActivity() {
         val searchView = menuItem?.actionView as? SearchView
 
         searchView?.setOnSearchClickListener {
-            Log.e("SearchView", "isSearchModeTrue")
             viewModel.handleSearchMode(true)
         }
 
@@ -157,7 +156,6 @@ class RootActivity : AppCompatActivity() {
         }
 
         if (viewModel.currentState.isSearch) {
-            Log.e("SearchView", "isSearch")
             menuItem?.expandActionView()
             searchView?.onActionViewExpanded()
             searchView?.setQuery(viewModel.currentState.searchQuery, true)
