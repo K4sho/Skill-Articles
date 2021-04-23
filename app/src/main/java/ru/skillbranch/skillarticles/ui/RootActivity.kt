@@ -65,7 +65,7 @@ class RootActivity : AppCompatActivity() {
         tv_text_content.text = if (state.isLoadingContent) "loading" else state.content.first() as String
 
         toolbar.title = state.title ?: "Skill Articles"
-        toolbar.subtitle = state.category ?: "Loading..."
+        toolbar.subtitle = state.category ?: "loading..."
         if (state.categoryIcon != null) toolbar.logo = getDrawable(state.categoryIcon as Int)
     }
 
