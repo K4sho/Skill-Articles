@@ -37,7 +37,7 @@ interface IArticleView {
     /**
      * Установка listeners для нижнего меню и настройка внешнего вида
      */
-    fun setupBottomBar()
+    fun setupBottombar()
 
     /**
      * Установка listeners для тулбара и настройка внешнего вида
@@ -47,7 +47,7 @@ interface IArticleView {
     /**
      * Отрисовка данных для боттомбара на слое представления
      */
-    fun renderBottomBar(data: BottombarData)
+    fun renderBottombar(data: BottombarData)
 
     /**
      * Отрисовка сабменю на слое представления

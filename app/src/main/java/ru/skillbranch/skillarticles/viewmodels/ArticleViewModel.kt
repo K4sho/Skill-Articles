@@ -155,3 +155,18 @@ data class ArticleState(
         val content: List<Any> = emptyList(),
         val reviews: List<Any> = emptyList()
 )
+
+data class BottombarData(
+    val isLike: Boolean = false,
+    val isBookmark: Boolean = false,
+    val isShowMenu: Boolean = false,
+    val isSearch: Boolean = false,
+    val resultCount: Int = 0,
+    val SearchPosition: Int = 0
+)
+
+data class SubmenuData(
+    val isShowMenu: Boolean = false,
+    val isDarkMode: Boolean = false,
+    val isBigText: Boolean = false
+)

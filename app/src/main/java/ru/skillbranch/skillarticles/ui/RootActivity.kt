@@ -3,6 +3,7 @@ package ru.skillbranch.skillarticles.ui
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.Menu
 import android.widget.ImageView
 import androidx.activity.viewModels
@@ -20,54 +21,66 @@ import ru.skillbranch.skillarticles.viewmodels.ArticleViewModel
 import ru.skillbranch.skillarticles.viewmodels.Notify
 import ru.skillbranch.skillarticles.viewmodels.ViewModelFactory
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
+import ru.skillbranch.skillarticles.ui.delegates.AttrValue
+import ru.skillbranch.skillarticles.ui.delegates.viewBinding
 
 class RootActivity : AppCompatActivity(), IArticleView {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     var viewModelFactory: ViewModelProvider.Factory = ViewModelFactory("0")
     private val viewModel: ArticleViewModel by viewModels { viewModelFactory }
 
-    private lateinit var vb: ActivityRootBinding
+    private val vb: ActivityRootBinding by viewBinding(ActivityRootBinding::inflate)
+
+    private val vbBottombar
+    get() = vb.bottombar.binding
+
+    private val vbSubmenu
+    get() = vb.submenu.binding
+
+    private lateinit var searchView: SearchView
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    val bgColor by AttrValue(R.attr.colorSecondary)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    val fgColor by AttrValue(R.attr.colorOnSecondary)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        vb = ActivityRootBinding.inflate(layoutInflater)
-        setContentView(vb.root)
         setupToolbar()
         setupSubmenu()
-        setupBottomBar()
+        setupBottombar()
 
-        viewModel.observeState(this) {
-            renderUi(it)
-        }
+        viewModel.observeState(this, ::renderUi)
+        viewModel.observeSubState(this, ArticleState::toBottombarData, ::renderBottombar)
         viewModel.observeNotifications(this) {
             renderNotification(it)
         }
     }
 
     override fun renderUi(state: ArticleState) {
-        btn_settings.isChecked = state.isShowMenu
-        if (state.isShowMenu) submenu.open() else submenu.close()
-        btn_like.isChecked = state.isLike
-        btn_bookmark.isChecked = state.isBookmark
-        switch_mode.isChecked = state.isDarkMode
+        vbBottombar.btnSettings.isChecked = state.isShowMenu
+        if (state.isShowMenu) vb.submenu.open() else vb.submenu.close()
+        vbBottombar.btnLike.isChecked = state.isLike
+        vbBottombar.btnBookmark.isChecked = state.isBookmark
+        vbSubmenu.switchMode.isChecked = state.isDarkMode
         delegate.localNightMode =
                 if (state.isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
 
         if (state.isBigText) {
-            tv_text_content.textSize = 18f
-            btn_text_up.isChecked = true
-            btn_text_down.isChecked = false
+            vb.tvTextContent.textSize = 18f
+            vbSubmenu.btnTextUp.isChecked = true
+            vbSubmenu.btnTextDown.isChecked = false
         } else {
-            tv_text_content.textSize = 14f
-            btn_text_up.isChecked = true
-            btn_text_down.isChecked = false
+            vb.tvTextContent.textSize = 14f
+            vbSubmenu.btnTextUp.isChecked = true
+            vbSubmenu.btnTextDown.isChecked = false
         }
 
-        tv_text_content.text = if (state.isLoadingContent) "loading" else state.content.first() as String
+        vb.tvTextContent.text = if (state.isLoadingContent) "loading" else state.content.first() as String
 
-        toolbar.title = state.title ?: "Skill Articles"
-        toolbar.subtitle = state.category ?: "loading..."
-        if (state.categoryIcon != null) toolbar.logo = getDrawable(state.categoryIcon as Int)
+        vb.toolbar.title = state.title ?: "Skill Articles"
+        vb.toolbar.subtitle = state.category ?: "loading..."
+        if (state.categoryIcon != null) vb.toolbar.logo = getDrawable(state.categoryIcon as Int)
     }
 
     /**
@@ -75,7 +88,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
      */
     private fun renderNotification(notify: Notify) {
         // Привязываем вывод снэкбара к боттомбару
-        val snackbar = Snackbar.make(coordinator_container, notify.message, Snackbar.LENGTH_LONG).setAnchorView(bottombar)
+        val snackbar = Snackbar.make(vb.coordinatorContainer, notify.message, Snackbar.LENGTH_LONG).setAnchorView(vb.bottombar)
         when(notify) {
             is Notify.ActionMessage -> {
                 with(snackbar) {
@@ -98,11 +111,11 @@ class RootActivity : AppCompatActivity(), IArticleView {
         snackbar.show()
     }
 
-    override fun setupBottomBar() {
-        btn_like.setOnClickListener { viewModel.handleLike() }
-        btn_bookmark.setOnClickListener { viewModel.handleBookmark() }
-        btn_share.setOnClickListener { viewModel.handleShare() }
-        btn_settings.setOnClickListener { viewModel.handleToggleMenu() }
+    override fun setupBottombar() {
+        vbBottombar.btnLike.setOnClickListener { viewModel.handleLike() }
+        vbBottombar.btnBookmark.setOnClickListener { viewModel.handleBookmark() }
+        vbBottombar.btnShare.setOnClickListener { viewModel.handleShare() }
+        vbBottombar.btnSettings.setOnClickListener { viewModel.handleToggleMenu() }
     }
 
     override fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
@@ -126,15 +139,15 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun setupSubmenu() {
-        switch_mode.setOnClickListener { viewModel.handleNightMode() }
-        btn_text_down.setOnClickListener { viewModel.handleDownText() }
-        btn_text_up.setOnClickListener { viewModel.handleUpText() }
+        vbSubmenu.switchMode.setOnClickListener { viewModel.handleNightMode() }
+        vbSubmenu.btnTextDown.setOnClickListener { viewModel.handleDownText() }
+        vbSubmenu.btnTextUp.setOnClickListener { viewModel.handleUpText() }
     }
 
     override fun setupToolbar() {
-        setSupportActionBar(toolbar)
+        setSupportActionBar(vb.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        val logo = if (toolbar.childCount > 2) toolbar.getChildAt(2) as ImageView else null
+        val logo = if (vb.toolbar.childCount > 2) vb.toolbar.getChildAt(2) as ImageView else null
         logo?.scaleType = ImageView.ScaleType.CENTER_CROP
         val lp = logo?.layoutParams as? Toolbar.LayoutParams
         lp?.let {
@@ -145,7 +158,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
         }
     }
 
-    override fun renderBottomBar(data: BottombarData) {
+    override fun renderBottombar(data: BottombarData) {
         TODO("Not yet implemented")
     }
 
