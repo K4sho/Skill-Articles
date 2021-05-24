@@ -80,4 +80,14 @@ interface IArticleViewModel {
      * searchView при изменении конфигурации (пересоздании активити)
      */
     fun handleSearch(query: String?)
+
+    /**
+     * Переместиться к предыдущему совпадению поиска
+     */
+    fun handleUpResult()
+
+    /**
+     * Переместиться к следующему совпадению поиска
+     */
+    fun handleDownResult()
 }

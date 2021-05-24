@@ -10,6 +10,9 @@ import ru.skillbranch.skillarticles.data.PrefManager
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
+/**
+ * Делегат для получения значений примитивов из DataStore
+ */
 class PrefDelegate<T>(private val defaultValue: T, private val customKey: String? = null) {
     operator fun provideDelegate(thisRef: PrefManager, prop: KProperty<*>) : ReadWriteProperty<PrefManager, T> {
         val key = createKey(customKey ?: prop.name, defaultValue)

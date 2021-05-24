@@ -1,4 +1,6 @@
 package ru.skillbranch.skillarticles.data.adapters
 
-class JsonAdapter {
+interface JsonAdapter<T> {
+    fun fromJson(json: String): T?
+    fun toJson(obj: T?): String
 }

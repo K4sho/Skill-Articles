@@ -21,6 +21,13 @@ import ru.skillbranch.skillarticles.data.delegates.PrefDelegate
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class PrefManager(context: Context = App.applicationContext()) {
+    var testInt by PrefDelegate(Int.MAX_VALUE)
+    var testLong by PrefDelegate(Long.MAX_VALUE)
+    var testDouble by PrefDelegate(Double.MAX_VALUE)
+    var testFloat by PrefDelegate(Float.MAX_VALUE)
+    var testString by PrefDelegate("test")
+    var testBoolean by  PrefDelegate(false)
+
     val dataStore = context.dataStore
     private val errHandler = CoroutineExceptionHandler {
         _, th -> Log.e("PrefManager", "err ${th.message}")

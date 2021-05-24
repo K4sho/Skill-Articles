@@ -7,6 +7,9 @@ import androidx.annotation.AttrRes
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
+/**
+ * Делегат позволяющий вернуть значение указанного атрибута темы
+ */
 class AttrValue(@AttrRes private val res: Int) : ReadOnlyProperty<Context, Int> {
   private var value: Int? = null
   override fun getValue(thisRef: Context, property: KProperty<*>): Int {

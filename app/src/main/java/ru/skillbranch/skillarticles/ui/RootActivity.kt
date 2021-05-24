@@ -5,33 +5,37 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.widget.ImageView
+import androidx.activity.viewModels
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
 import com.google.android.material.snackbar.Snackbar
 import ru.skillbranch.skillarticles.R
+import ru.skillbranch.skillarticles.databinding.ActivityRootBinding
 import ru.skillbranch.skillarticles.viewmodels.ArticleState
 import ru.skillbranch.skillarticles.viewmodels.ArticleViewModel
 import ru.skillbranch.skillarticles.viewmodels.Notify
 import ru.skillbranch.skillarticles.viewmodels.ViewModelFactory
-import kotlinx.android.synthetic.main.activity_root.*
-import kotlinx.android.synthetic.main.layout_bottombar.*
-import kotlinx.android.synthetic.main.layout_submenu.*
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 
-class RootActivity : AppCompatActivity() {
-    private lateinit var viewModel: ArticleViewModel
+class RootActivity : AppCompatActivity(), IArticleView {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    var viewModelFactory: ViewModelProvider.Factory = ViewModelFactory("0")
+    private val viewModel: ArticleViewModel by viewModels { viewModelFactory }
+
+    private lateinit var vb: ActivityRootBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_root)
-        setupToolbarMenu()
+        vb = ActivityRootBinding.inflate(layoutInflater)
+        setContentView(vb.root)
+        setupToolbar()
         setupSubmenu()
         setupBottomBar()
 
-        val vm = ViewModelFactory("0")
-        viewModel = ViewModelProviders.of(this, vm).get(ArticleViewModel::class.java)
         viewModel.observeState(this) {
             renderUi(it)
         }
@@ -40,10 +44,7 @@ class RootActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Метод для отрисовки всех элементов экрана, согласно текущему стэйту
-     */
-    private fun renderUi(state: ArticleState) {
+    override fun renderUi(state: ArticleState) {
         btn_settings.isChecked = state.isShowMenu
         if (state.isShowMenu) submenu.open() else submenu.close()
         btn_like.isChecked = state.isLike
@@ -97,20 +98,40 @@ class RootActivity : AppCompatActivity() {
         snackbar.show()
     }
 
-    private fun setupBottomBar() {
+    override fun setupBottomBar() {
         btn_like.setOnClickListener { viewModel.handleLike() }
         btn_bookmark.setOnClickListener { viewModel.handleBookmark() }
         btn_share.setOnClickListener { viewModel.handleShare() }
         btn_settings.setOnClickListener { viewModel.handleToggleMenu() }
     }
 
-    private fun setupSubmenu() {
+    override fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
+        TODO("Not yet implemented")
+    }
+
+    override fun renderSearchPosition(searchPosition: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override fun clearSearchResult() {
+        TODO("Not yet implemented")
+    }
+
+    override fun showSearchBar(resultsCount: Int, searchPosition: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override fun hideSearchBar() {
+        TODO("Not yet implemented")
+    }
+
+    override fun setupSubmenu() {
         switch_mode.setOnClickListener { viewModel.handleNightMode() }
         btn_text_down.setOnClickListener { viewModel.handleDownText() }
         btn_text_up.setOnClickListener { viewModel.handleUpText() }
     }
 
-    private fun setupToolbarMenu() {
+    override fun setupToolbar() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         val logo = if (toolbar.childCount > 2) toolbar.getChildAt(2) as ImageView else null
@@ -122,6 +143,14 @@ class RootActivity : AppCompatActivity() {
             it.marginEnd = this.dpToIntPx(16)
             logo.layoutParams = it
         }
+    }
+
+    override fun renderBottomBar(data: BottombarData) {
+        TODO("Not yet implemented")
+    }
+
+    override fun renderSubmenu(data: SubmenuData) {
+        TODO("Not yet implemented")
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
