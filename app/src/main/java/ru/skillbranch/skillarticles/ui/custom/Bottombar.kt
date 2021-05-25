@@ -18,6 +18,7 @@ class Bottombar @JvmOverloads constructor(
 ) : ConstraintLayout(context, attrs, defStyleAttr), CoordinatorLayout.AttachedBehavior {
     var isClose: Boolean = true
     val binding: LayoutBottombarBinding
+    var isSearchMode = false
 
     init {
         binding = LayoutBottombarBinding.inflate(LayoutInflater.from(context), this)

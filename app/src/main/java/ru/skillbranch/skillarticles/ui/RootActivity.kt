@@ -16,13 +16,10 @@ import androidx.lifecycle.ViewModelProviders
 import com.google.android.material.snackbar.Snackbar
 import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.databinding.ActivityRootBinding
-import ru.skillbranch.skillarticles.viewmodels.ArticleState
-import ru.skillbranch.skillarticles.viewmodels.ArticleViewModel
-import ru.skillbranch.skillarticles.viewmodels.Notify
-import ru.skillbranch.skillarticles.viewmodels.ViewModelFactory
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 import ru.skillbranch.skillarticles.ui.delegates.AttrValue
 import ru.skillbranch.skillarticles.ui.delegates.viewBinding
+import ru.skillbranch.skillarticles.viewmodels.*
 
 class RootActivity : AppCompatActivity(), IArticleView {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -52,6 +49,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
         viewModel.observeState(this, ::renderUi)
         viewModel.observeSubState(this, ArticleState::toBottombarData, ::renderBottombar)
+        viewModel.observeSubState(this, ArticleState::toSubmenuData, ::renderSubmenu)
         viewModel.observeNotifications(this) {
             renderNotification(it)
         }
