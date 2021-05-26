@@ -8,9 +8,11 @@ import ru.skillbranch.skillarticles.data.AppSettings
 import ru.skillbranch.skillarticles.data.ArticleData
 import ru.skillbranch.skillarticles.data.ArticlePersonalInfo
 import ru.skillbranch.skillarticles.data.repositories.ArticleRepository
-import ru.skillbranch.skillarticles.extensions.data.toAppSettings
-import ru.skillbranch.skillarticles.extensions.data.toArticlePersonalInfo
+import ru.skillbranch.skillarticles.extensions.asMap
 import ru.skillbranch.skillarticles.extensions.format
+import ru.skillbranch.skillarticles.extensions.toAppSettings
+import ru.skillbranch.skillarticles.extensions.toArticlePersonalInfo
+import ru.skillbranch.skillarticles.extensions.indexesOf
 import java.util.*
 
 class ArticleViewModel(private val articleId: String, savedStateHandle: SavedStateHandle) :
@@ -64,7 +66,7 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
         }
     }
 
-    override fun getArticleContent(): LiveData<List<Any>?> {
+    override fun getArticleContent(): LiveData<List<String>?> {
         return repository.loadArticleContent(articleId)
     }
 
@@ -126,22 +128,30 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
 
     override fun handleSearchMode(isSearch: Boolean) {
         updateState {
-            state -> state.copy(isSearch = isSearch)
+            it.copy(isSearch = isSearch, isShowMenu = false, searchPosition = 0)
         }
     }
 
     override fun handleSearch(query: String?) {
+        query ?: return
+
+        val result = currentState.content.firstOrNull().indexesOf(query).map { it to it + query.length }
+
         updateState {
-            state -> state.copy(searchQuery = query)
+            state -> state.copy(searchQuery = query, searchResults = result)
         }
     }
 
     override fun handleUpResult() {
-        TODO("Not yet implemented")
+        updateState {
+            it.copy(searchPosition = it.searchPosition.dec())
+        }
     }
 
     override fun handleDownResult() {
-        TODO("Not yet implemented")
+        updateState {
+            it.copy(searchPosition = it.searchPosition.inc())
+        }
     }
 }
 
@@ -168,7 +178,7 @@ data class ArticleState(
         val date: String? = null, // дата публикации
         val author: Any? = null, // автор
         val poster: String? = null,
-        val content: List<Any> = emptyList(),
+        val content: List<String> = emptyList(),
         val reviews: List<Any> = emptyList()
 ) : VMState {
     override fun toBundle(): Bundle {
@@ -202,7 +212,7 @@ data class ArticleState(
             date = map["date"] as String?,
             author = map["author"] as Any?,
             poster = map["poster"] as String?,
-            content = map["content"] as List<Any>,
+            content = map["content"] as List<String>,
             reviews = map["reviews"] as List<Any>,
         )
     }
@@ -214,7 +224,7 @@ data class BottombarData(
     val isShowMenu: Boolean = false,
     val isSearch: Boolean = false,
     val resultCount: Int = 0,
-    val SearchPosition: Int = 0
+    val searchPosition: Int = 0
 )
 
 data class SubmenuData(

@@ -2,10 +2,14 @@ package ru.skillbranch.skillarticles.ui
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.PersistableBundle
+import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
+import android.view.MenuItem
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.widget.SearchView
@@ -56,29 +60,32 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun renderUi(state: ArticleState) {
-        vbBottombar.btnSettings.isChecked = state.isShowMenu
-        if (state.isShowMenu) vb.submenu.open() else vb.submenu.close()
-        vbBottombar.btnLike.isChecked = state.isLike
-        vbBottombar.btnBookmark.isChecked = state.isBookmark
-        vbSubmenu.switchMode.isChecked = state.isDarkMode
         delegate.localNightMode =
                 if (state.isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
 
-        if (state.isBigText) {
-            vb.tvTextContent.textSize = 18f
-            vbSubmenu.btnTextUp.isChecked = true
-            vbSubmenu.btnTextDown.isChecked = false
-        } else {
-            vb.tvTextContent.textSize = 14f
-            vbSubmenu.btnTextUp.isChecked = true
-            vbSubmenu.btnTextDown.isChecked = false
+        with(vb.tvTextContent) {
+            textSize = if (state.isBigText) 18f else 14f
+            movementMethod = ScrollingMovementMethod()
+            val content = if (state.isLoadingContent) "loading" else state.content.first()
+            if (text.toString() == content) return@with
+            setText(content, TextView.BufferType.SPANNABLE)
         }
 
-        vb.tvTextContent.text = if (state.isLoadingContent) "loading" else state.content.first() as String
+        // bind toolbar
+        with(vb.toolbar) {
+            title = state.title ?: "loading"
+            subtitle = state.category ?: "loading"
+            if (state.categoryIcon != null) vb.toolbar.logo = getDrawable(state.categoryIcon as Int)
+        }
 
-        vb.toolbar.title = state.title ?: "Skill Articles"
-        vb.toolbar.subtitle = state.category ?: "loading..."
-        if (state.categoryIcon != null) vb.toolbar.logo = getDrawable(state.categoryIcon as Int)
+        if (state.isLoadingContent) return
+
+        if (state.isSearch) {
+            renderSearchResult(state.searchResults)
+            renderSearchPosition(state.searchPosition)
+        } else {
+            clearSearchResult()
+        }
     }
 
     /**
@@ -110,10 +117,27 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun setupBottombar() {
-        vbBottombar.btnLike.setOnClickListener { viewModel.handleLike() }
-        vbBottombar.btnBookmark.setOnClickListener { viewModel.handleBookmark() }
-        vbBottombar.btnShare.setOnClickListener { viewModel.handleShare() }
-        vbBottombar.btnSettings.setOnClickListener { viewModel.handleToggleMenu() }
+        with(vbBottombar) {
+            btnLike.setOnClickListener { viewModel.handleLike() }
+            btnBookmark.setOnClickListener { viewModel.handleBookmark() }
+            btnShare.setOnClickListener { viewModel.handleShare() }
+            btnSettings.setOnClickListener { viewModel.handleToggleMenu() }
+
+            btnResultUp.setOnClickListener {
+                searchView.clearFocus()
+                viewModel.handleUpResult()
+            }
+
+            btnResultDown.setOnClickListener {
+                searchView.clearFocus()
+                viewModel.handleDownResult()
+            }
+
+            btnSearchClose.setOnClickListener {
+                viewModel.handleSearchMode(false)
+                invalidateOptionsMenu()
+            }
+        }
     }
 
     override fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
@@ -157,50 +181,74 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun renderBottombar(data: BottombarData) {
-        TODO("Not yet implemented")
+        with(vbBottombar) {
+            btnSettings.isChecked = data.isShowMenu
+            btnLike.isChecked = data.isLike
+            btnBookmark.isChecked = data.isBookmark
+        }
+
+        if (data.isSearch) showSearchBar(data.resultCount, data.searchPosition)
+        else hideSearchBar()
     }
 
     override fun renderSubmenu(data: SubmenuData) {
-        TODO("Not yet implemented")
+        with(vbSubmenu) {
+            btnTextDown.isChecked = !data.isBigText
+            btnTextUp.isChecked = data.isBigText
+            switchMode.isChecked = data.isDarkMode
+        }
+        if (data.isShowMenu) vb.submenu.open() else vb.submenu.close()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_search, menu)
-        val menuItem = menu?.findItem(R.id.action_search)
-        val searchView = menuItem?.actionView as? SearchView
+        val menuItem = menu.findItem(R.id.action_search)
+        val searchView = (menuItem.actionView as SearchView)
 
-        searchView?.setOnSearchClickListener {
-            viewModel.handleSearchMode(true)
+        // restore SearchView
+        if (viewModel.currentState.isSearch) {
+            menuItem.expandActionView()
+            searchView.setQuery(viewModel.currentState.searchQuery, false)
+            searchView.requestFocus()
+        } else {
+            searchView.clearFocus()
         }
 
-        searchView?.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
+        menuItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener{
+            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+                viewModel.handleSearchMode(true)
+                return true
+            }
+
+            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+                viewModel.handleSearchMode(false)
+                return true
+            }
+        })
+
+        /**searchView.setOnSearchClickListener {
+            viewModel.handleSearchMode(true)
+        }*/
+
+        searchView.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 searchView.clearFocus()
                 viewModel.handleSearch(p0)
                 return false
             }
-
             override fun onQueryTextChange(p0: String?): Boolean {
                 if (!p0.isNullOrBlank()) {
                     viewModel.handleSearch(p0)
                 }
                 return false
             }
-
         })
 
-        searchView?.setOnQueryTextFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) {
-                viewModel.handleSearchMode(true)
-            }
-        }
-
-        if (viewModel.currentState.isSearch) {
-            menuItem?.expandActionView()
-            searchView?.onActionViewExpanded()
-            searchView?.setQuery(viewModel.currentState.searchQuery, true)
-        }
-
         return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        viewModel.saveState()
+        super.onSaveInstanceState(outState)
     }
 }
