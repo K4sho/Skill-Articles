@@ -24,7 +24,6 @@ class Bottombar @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr), CoordinatorLayout.AttachedBehavior {
-    var isClose: Boolean = true
     val binding: LayoutBottombarBinding
     var isSearchMode = false
 
@@ -45,7 +44,7 @@ class Bottombar @JvmOverloads constructor(
     fun setSearchInfo(searchCount: Int = 0, position: Int = 0) {
         with(binding) {
             btnResultDown.isEnabled = searchCount > 0
-            btnResultDown.isEnabled = searchCount > 0
+            btnResultUp.isEnabled = searchCount > 0
 
             tvSearchResult.text = if (searchCount == 0) "Not found" else "${position.inc()} of $searchCount"
 

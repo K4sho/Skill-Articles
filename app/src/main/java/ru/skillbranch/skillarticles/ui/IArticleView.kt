@@ -49,7 +49,7 @@ interface IArticleView {
     /**
      * Отрисовка данных для боттомбара на слое представления
      */
-    fun renderBottombar(data: BottombarData)
+    fun renderBotombar(data: BottombarData)
 
     /**
      * Отрисовка сабменю на слое представления

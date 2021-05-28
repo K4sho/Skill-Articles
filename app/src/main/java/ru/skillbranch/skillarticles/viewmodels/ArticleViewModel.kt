@@ -1,6 +1,7 @@
 package ru.skillbranch.skillarticles.viewmodels
 
 import android.os.Bundle
+import android.util.Log
 import androidx.core.os.bundleOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
@@ -19,7 +20,6 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
     BaseViewModel<ArticleState>(ArticleState(), savedStateHandle), IArticleViewModel {
 
     private val repository = ArticleRepository
-    private var menuIsShown = false
 
     // В блоке инициализации подписываем на изменения
     init {
@@ -122,7 +122,7 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
 
     override fun handleToggleMenu() {
         updateState {
-            state -> state.copy(isShowMenu = !state.isShowMenu).also { menuIsShown = !state.isShowMenu }
+            it.copy(isShowMenu = !it.isShowMenu)//.also { menuIsShown = !state.isShowMenu }
         }
     }
 

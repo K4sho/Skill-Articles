@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewAnimationUtils
@@ -12,8 +13,6 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
 import com.google.android.material.shape.MaterialShapeDrawable
-import ru.skillbranch.skillarticles.R
-import ru.skillbranch.skillarticles.databinding.LayoutBottombarBinding
 import ru.skillbranch.skillarticles.databinding.LayoutSubmenuBinding
 import ru.skillbranch.skillarticles.extensions.dpToPx
 import ru.skillbranch.skillarticles.ui.custom.behaviors.SubmenuBehavior

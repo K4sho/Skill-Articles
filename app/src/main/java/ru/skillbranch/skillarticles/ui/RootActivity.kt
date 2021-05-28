@@ -2,13 +2,11 @@ package ru.skillbranch.skillarticles.ui
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.text.Selection
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ImageView
@@ -20,7 +18,6 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.Toolbar
 import androidx.core.text.getSpans
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProviders
 import com.google.android.material.snackbar.Snackbar
 import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.databinding.ActivityRootBinding
@@ -59,7 +56,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
         setupBottombar()
 
         viewModel.observeState(this, ::renderUi)
-        viewModel.observeSubState(this, ArticleState::toBottombarData, ::renderBottombar)
+        viewModel.observeSubState(this, ArticleState::toBottombarData, ::renderBotombar)
         viewModel.observeSubState(this, ArticleState::toSubmenuData, ::renderSubmenu)
         viewModel.observeNotifications(this) {
             renderNotification(it)
@@ -229,7 +226,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
         }
     }
 
-    override fun renderBottombar(data: BottombarData) {
+    override fun renderBotombar(data: BottombarData) {
         with(vbBottombar) {
             btnSettings.isChecked = data.isShowMenu
             btnLike.isChecked = data.isLike
@@ -254,7 +251,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
         val menuItem = menu.findItem(R.id.action_search)
         searchView = (menuItem.actionView as SearchView)
         searchView.queryHint = getString(R.string.article_search_placeholder)
-                // restore SearchView
+        // restore SearchView
         if (viewModel.currentState.isSearch) {
             menuItem.expandActionView()
             searchView.setQuery(viewModel.currentState.searchQuery, false)
