@@ -1,5 +1,6 @@
 package ru.skillbranch.skillarticles.markdown
 
+import android.util.Log
 import java.util.regex.Pattern
 
 object MarkdownParser {
@@ -16,9 +17,11 @@ object MarkdownParser {
     private const val LINK_GROUP = "(\\[[^\\[\\]]*?]\\(.+?\\)|^\\[*?]\\(.*?\\))"
     private const val BLOCK_CODE_GROUP = "(^```[\\s\\S]+?```$)"
     private const val ORDERED_LIST_ITEM_GROUP = "(^\\d{1,2}\\. .+$)"//"(^\\d{1,2}\\. \\s.+?$)"
-    private const val IMAGE_GROUP = "!\\[[^\\[\\]]*?\\]\\(.*?\\)"
+    private const val IMAGE_GROUP = "(!\\[[^\\[\\]]*?\\]\\(.*?\\))"
 
-    const val MARKDOWN_GROUPS = "$UNORDERED_LIST_ITEM_GROUP|$HEADER_GROUP|$QUOTE_GROUP|$ITALIC_GROUP|$BOLD_GROUP|$STRIKE_GROUP|$RULE_GROUP|$INLINE_GROUP|$LINK_GROUP|$BLOCK_CODE_GROUP|$ORDERED_LIST_ITEM_GROUP|$IMAGE_GROUP"
+    private const val MARKDOWN_GROUPS = "$UNORDERED_LIST_ITEM_GROUP|$HEADER_GROUP|$QUOTE_GROUP|$ITALIC_GROUP" +
+            "|$BOLD_GROUP|$STRIKE_GROUP|$RULE_GROUP|$INLINE_GROUP|$LINK_GROUP|$BLOCK_CODE_GROUP" +
+            "|$ORDERED_LIST_ITEM_GROUP|$IMAGE_GROUP"
 
     private val elementsPattern by lazy { Pattern.compile(MARKDOWN_GROUPS, Pattern.MULTILINE) }
 
@@ -78,7 +81,7 @@ object MarkdownParser {
             var text: CharSequence
 
             // groups range for iterate by groups
-            val groups = 1..11
+            val groups = 1..12
             var group = -1
             for (gr in groups) {
                 if (matcher.group(gr) != null) {
@@ -128,7 +131,7 @@ object MarkdownParser {
                 // ITALIC
                 4 -> {
                     // text without "*{}*"
-                    text = string.subSequence(startIndex.inc(), endIndex.inc())
+                    text = string.subSequence(startIndex.inc(), endIndex.dec())
                     val subelements = findElements(text)
                     val element = Element.Italic(text, subelements)
                     parents.add(element)
@@ -223,15 +226,21 @@ object MarkdownParser {
                 12 -> {
                     // text without "![]()". Тут нужно найти все символы регулярки этой
                     text = string.subSequence(startIndex, endIndex)
-                    val (alt: String?, link: String) = "(?:!\\[(.*?)\\]\\((.*?)\\))".toRegex().find(text)!!.destructured
-                    val sepLinkAndDesc = link.split(" ")
-                    var textString = ""
-                    if (sepLinkAndDesc[1].isNotEmpty() || sepLinkAndDesc[1].isNotBlank()) {
-                        for (index in 1..sepLinkAndDesc.size) {
-                            textString += sepLinkAndDesc[index]
+                    val (alt: String, link: String) = "(?:!\\[(.*?)\\]\\((.*?)\\))".toRegex().find(text)!!.destructured
+                    val sepLinkAndDesc = link.split('"')
+                    var textString: String = ""
+                    if (sepLinkAndDesc.size > 1){
+                        if (sepLinkAndDesc[1].isNotEmpty() || sepLinkAndDesc[1].isNotBlank()) {
+                            for (index in 1..sepLinkAndDesc.size-1) {
+                                textString += sepLinkAndDesc[index]
+                            }
                         }
                     }
-                    val element = Element.Image(sepLinkAndDesc.first(), alt, textString)
+                    var realAlt: String? = null
+                    if (alt != "") {
+                        realAlt = alt
+                    }
+                    val element = Element.Image(sepLinkAndDesc.first().trim(), realAlt, textString)
                     parents.add(element)
                     lastStartIndex = endIndex
                 }
