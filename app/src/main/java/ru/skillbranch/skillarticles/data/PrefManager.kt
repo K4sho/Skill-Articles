@@ -28,13 +28,14 @@ class PrefManager(context: Context = App.applicationContext()) {
     var testDouble by PrefDelegate(Double.MAX_VALUE)
     var testFloat by PrefDelegate(Float.MAX_VALUE)
     var testString by PrefDelegate("test")
-    var testBoolean by  PrefDelegate(false)
+    var testBoolean by PrefDelegate(false)
     var testUser by PrefObjDelegate(UserJsonAdapter())
 
     val dataStore = context.dataStore
-    private val errHandler = CoroutineExceptionHandler {
-        _, th -> Log.e("PrefManager", "err ${th.message}")
+    private val errHandler = CoroutineExceptionHandler { _, th ->
+        Log.e("PrefManager", "err ${th.message}")
     }
+
     // Скоуп для dataStore корутин операций
     internal val scope = CoroutineScope(SupervisorJob() + errHandler)
 
@@ -42,13 +43,15 @@ class PrefManager(context: Context = App.applicationContext()) {
     var isDarkMode by PrefDelegate(false)
 
     val settings: LiveData<AppSettings>
-    get() {
-        val isBig = dataStore.data.map { it[booleanPreferencesKey(this::isBigText.name)] ?: false }
-        val isDark = dataStore.data.map { it[booleanPreferencesKey(this::isDarkMode.name)] ?: false }
+        get() {
+            val isBig =
+                dataStore.data.map { it[booleanPreferencesKey(this::isBigText.name)] ?: false }
+            val isDark =
+                dataStore.data.map { it[booleanPreferencesKey(this::isDarkMode.name)] ?: false }
 
-        return isDark.zip(isBig) { dark, big -> AppSettings(dark, big) }
-            .onEach{ Log.e("PrefManager", "settings $it") }
-            .distinctUntilChanged()
-            .asLiveData()
-    }
+            return isDark.zip(isBig) { dark, big -> AppSettings(dark, big) }
+                .onEach { Log.e("PrefManager", "settings $it") }
+                .distinctUntilChanged()
+                .asLiveData()
+        }
 }
