@@ -15,7 +15,7 @@ object MarkdownParser {
     private const val RULE_GROUP = "(^[-_*]{3}$)"
     private const val INLINE_GROUP = "((?<!`)`[^`\\s].*?[`\\s]?`(?!`))"
     private const val LINK_GROUP = "(\\[[^\\[\\]]*?]\\(.+?\\)|^\\[*?]\\(.*?\\))"
-    private const val BLOCK_CODE_GROUP = "(^```[\\s\\S]+?```$)"
+    private const val BLOCK_CODE_GROUP = "((?<!`)`{3}[^` ][\\s\\S]*?[^`]?`{3}(?![^`\n]))"
     private const val ORDERED_LIST_ITEM_GROUP = "(^\\d{1,2}\\. .+$)"//"(^\\d{1,2}\\. \\s.+?$)"
     private const val IMAGE_GROUP = "(!\\[[^\\[\\]]*?\\]\\(.*?\\))"
 
@@ -182,24 +182,31 @@ object MarkdownParser {
                 }
                 // Block Code
                 10 -> {
-                    // text without "```{}```"
-                    text = string.subSequence(startIndex.plus(3), endIndex.plus(-3)).toString()
-                    if (text.contains(LINE_SEPARATOR)) {
-                        for ((index, line) in text.lines().withIndex()) {
-                            when (index) {
-                                text.lines().lastIndex -> parents.add(
-                                        Element.BlockCode(Element.BlockCode.Type.END, line)
+                    //text without "```{}```"
+                    text = string.substring(startIndex.plus(3), endIndex.minus(3))
+                    if (!text.contains(LINE_SEPARATOR)) {
+                        val element = Element.BlockCode(Element.BlockCode.Type.SINGLE, text)
+                        parents.add(element)
+                    } else {
+                        val strings = text.split(LINE_SEPARATOR.toRegex())
+                        val firstLine = Element.BlockCode(
+                            Element.BlockCode.Type.START, strings.first().plus(
+                                LINE_SEPARATOR
+                            )
+                        )
+                        parents.add(firstLine)
+                        if (strings.size > 2) {
+                            (1..strings.size.minus(2)).forEach {
+                                val element = Element.BlockCode(
+                                    Element.BlockCode.Type.MIDDLE, strings[it].plus(
+                                        LINE_SEPARATOR
+                                    )
                                 )
-                                0 -> parents.add(
-                                        Element.BlockCode(Element.BlockCode.Type.START, line + LINE_SEPARATOR)
-                                )
-                                else -> parents.add(
-                                        Element.BlockCode(Element.BlockCode.Type.MIDDLE, line + LINE_SEPARATOR)
-                                )
+                                parents.add(element)
                             }
                         }
-                    } else {
-                        parents.add(Element.BlockCode(Element.BlockCode.Type.SINGLE, text))
+                        val lastLine = Element.BlockCode(Element.BlockCode.Type.END, strings.last())
+                        parents.add(lastLine)
                     }
                     lastStartIndex = endIndex
                 }

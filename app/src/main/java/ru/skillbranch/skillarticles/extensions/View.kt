@@ -10,7 +10,12 @@ import androidx.core.view.marginTop
 /**
  * Добавляет внешний оступ к View
  */
-fun View.setMarginOptionally(left: Int = marginLeft, top: Int = marginTop, right: Int = marginRight, bottom: Int = marginBottom) {
+fun View.setMarginOptionally(
+    left: Int = marginLeft,
+    top: Int = marginTop,
+    right: Int = marginRight,
+    bottom: Int = marginBottom
+) {
     val layoutParams = layoutParams as? ViewGroup.MarginLayoutParams
     layoutParams?.let {
         it.setMargins(left, top, right, bottom)
