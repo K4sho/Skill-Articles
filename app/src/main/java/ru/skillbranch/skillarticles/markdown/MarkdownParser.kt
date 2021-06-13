@@ -182,32 +182,9 @@ object MarkdownParser {
                 }
                 // Block Code
                 10 -> {
-                    //text without "```{}```"
-                    text = string.substring(startIndex.plus(3), endIndex.minus(3))
-                    if (!text.contains(LINE_SEPARATOR)) {
-                        val element = Element.BlockCode(Element.BlockCode.Type.SINGLE, text)
-                        parents.add(element)
-                    } else {
-                        val strings = text.split(LINE_SEPARATOR.toRegex())
-                        val firstLine = Element.BlockCode(
-                            Element.BlockCode.Type.START, strings.first().plus(
-                                LINE_SEPARATOR
-                            )
-                        )
-                        parents.add(firstLine)
-                        if (strings.size > 2) {
-                            (1..strings.size.minus(2)).forEach {
-                                val element = Element.BlockCode(
-                                    Element.BlockCode.Type.MIDDLE, strings[it].plus(
-                                        LINE_SEPARATOR
-                                    )
-                                )
-                                parents.add(element)
-                            }
-                        }
-                        val lastLine = Element.BlockCode(Element.BlockCode.Type.END, strings.last())
-                        parents.add(lastLine)
-                    }
+                    text = string.subSequence(startIndex.plus(3), endIndex.plus(-3))
+                    val element = Element.BlockCode(text = text)
+                    parents.add(element)
                     lastStartIndex = endIndex
                 }
                 // ORDERED LIST
