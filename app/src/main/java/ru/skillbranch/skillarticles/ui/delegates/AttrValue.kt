@@ -11,13 +11,13 @@ import kotlin.reflect.KProperty
  * Делегат позволяющий вернуть значение указанного атрибута темы
  */
 class AttrValue(@AttrRes private val res: Int) : ReadOnlyProperty<Context, Int> {
-  private var value: Int? = null
-  override fun getValue(thisRef: Context, property: KProperty<*>): Int {
-    if (value == null) {
-      val tv = TypedValue()
-      if (thisRef.theme.resolveAttribute(res, tv, true)) value = tv.data
-          else throw Resources.NotFoundException("Resource with id $res not found")
+    private var value: Int? = null
+    override fun getValue(thisRef: Context, property: KProperty<*>): Int {
+        if (value == null) {
+            val tv = TypedValue()
+            if (thisRef.theme.resolveAttribute(res, tv, true)) value = tv.data
+            else throw Resources.NotFoundException("Resource with id $res not found")
+        }
+        return value!!
     }
-          return value!!
-  }
 }

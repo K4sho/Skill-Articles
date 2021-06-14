@@ -24,11 +24,14 @@ class Bottombar @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr), CoordinatorLayout.AttachedBehavior {
-    val binding: LayoutBottombarBinding
+
     var isSearchMode = false
 
+    //Можно совместить объявление с инициализацией
+    val binding: LayoutBottombarBinding =
+        LayoutBottombarBinding.inflate(LayoutInflater.from(context), this)
+
     init {
-        binding = LayoutBottombarBinding.inflate(LayoutInflater.from(context), this)
         val materialBg = MaterialShapeDrawable.createWithElevationOverlay(context)
         materialBg.elevation = elevation
         background = materialBg
@@ -46,8 +49,13 @@ class Bottombar @JvmOverloads constructor(
             btnResultDown.isEnabled = searchCount > 0
             btnResultUp.isEnabled = searchCount > 0
 
+            //Хардкод строк обычно не приветствуется, особенно там где есть доступ к контексту.
+            // Лучше положить эти строки в ресурсы и получать их при создании вьюхи,
+            // сохраняя в приватное свойство.
             tvSearchResult.text = if (searchCount == 0) "Not found" else "${position.inc()} of $searchCount"
 
+            //если в статье слово встретится один раз, то стрелка вниз не отключится,
+            // так как сработает первое условие в when и остальные проверки будут пропущены.
             when(position){
                 0 -> btnResultUp.isEnabled = false
                 searchCount.dec() -> btnResultDown.isEnabled = false

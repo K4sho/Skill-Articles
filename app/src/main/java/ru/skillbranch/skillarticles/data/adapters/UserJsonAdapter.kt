@@ -4,6 +4,9 @@ import org.json.JSONObject
 import ru.skillbranch.skillarticles.data.local.User
 import ru.skillbranch.skillarticles.extensions.asMap
 
+/**
+ * Класс позволяет конвертировать объект из Json и обратно
+ */
 class UserJsonAdapter() : JsonAdapter<User> {
     override fun fromJson(json: String): User? {
         if (json.isEmpty()) return null
@@ -19,8 +22,9 @@ class UserJsonAdapter() : JsonAdapter<User> {
     }
 
     override fun toJson(obj: User?): String {
-        return obj?.let {
-            JSONObject(it.asMap()).toString()
-        } ?: ""
+        //лучше бы конечно предоставить возврат пустого JSON-а классу JSONObject,
+        // потому что насколько я помню, пустой JSON это "{}", а не пустая строка,
+        // и из-за этого могут возникнуть проблемы с десериализацией.
+        return JSONObject(obj?.asMap().orEmpty()).toString()
     }
 }

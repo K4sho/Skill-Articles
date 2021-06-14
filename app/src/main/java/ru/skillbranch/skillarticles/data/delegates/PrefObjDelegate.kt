@@ -26,11 +26,11 @@ class PrefObjDelegate<T>(private val adapter: JsonAdapter<T>,
 
             override fun setValue(thisRef: PrefManager, property: KProperty<*>, value: T?) {
                 _storedValue = value
-                var jsonValue = adapter.toJson(value)
+                //Сериализацию лучше проводить асинхронно.
                 @Suppress("UNCHECKED_CAST")
                 thisRef.scope.launch {
-                    thisRef.dataStore.edit {
-                        prefs -> prefs[key] = jsonValue
+                    thisRef.dataStore.edit { prefs ->
+                        prefs[key] = adapter.toJson(value)
                     }
                 }
             }
@@ -38,11 +38,14 @@ class PrefObjDelegate<T>(private val adapter: JsonAdapter<T>,
             override fun getValue(thisRef: PrefManager, property: KProperty<*>): T? {
                 if (_storedValue == null) {
                     // async flow
-                    var flowValue = thisRef.dataStore.data.map {
-                        pref -> pref[key] ?: ""
+                    //Делать flowValue var нет нужды, также парсинг можно переместить в map,
+                    // так как вся цепочка вызовов в flow сработает только тогда, когда
+                    // мы будем читать из него значения.
+                    val flowValue = thisRef.dataStore.data.map {
+                        pref -> adapter.fromJson(pref[key] ?: "")
                     }
                     // sync read
-                    _storedValue = runBlocking{ flowValue.map { adapter.fromJson(it) }.first() }
+                    _storedValue = runBlocking{ flowValue.first() }
                 }
                 return _storedValue
             }

@@ -14,6 +14,7 @@ import ru.skillbranch.skillarticles.extensions.format
 import ru.skillbranch.skillarticles.extensions.toAppSettings
 import ru.skillbranch.skillarticles.extensions.toArticlePersonalInfo
 import ru.skillbranch.skillarticles.extensions.indexesOf
+import ru.skillbranch.skillarticles.markdown.MarkdownParser
 import java.util.*
 
 class ArticleViewModel(private val articleId: String, savedStateHandle: SavedStateHandle) :
@@ -23,45 +24,41 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
 
     // В блоке инициализации подписываем на изменения
     init {
-        savedStateHandle.setSavedStateProvider("state"){
+        savedStateHandle.setSavedStateProvider("state") {
             currentState.toBundle()
         }
 
-        subscribeOnDataSource(repository.getAppSettings()) {
-            setting, state ->
+        subscribeOnDataSource(repository.getAppSettings()) { setting, state ->
             state.copy(
-                    isDarkMode = setting.isDarkMode,
-                    isBigText = setting.isBigText
+                isDarkMode = setting.isDarkMode,
+                isBigText = setting.isBigText
             )
         }
-        subscribeOnDataSource(getArticleData()) {
-            article, state ->
+        subscribeOnDataSource(getArticleData()) { article, state ->
             article ?: return@subscribeOnDataSource null
             state.copy(
-                    shareLink = article.shareLink,
-                    title = article.title,
-                    author = article.author,
-                    category = article.category,
-                    categoryIcon = article.categoryIcon,
-                    date = article.date.format()
+                shareLink = article.shareLink,
+                title = article.title,
+                author = article.author,
+                category = article.category,
+                categoryIcon = article.categoryIcon,
+                date = article.date.format()
             )
         }
 
-        subscribeOnDataSource(getArticleContent()) {
-            content, state ->
+        subscribeOnDataSource(getArticleContent()) { content, state ->
             content ?: return@subscribeOnDataSource null
             state.copy(
-                    isLoadingContent = false,
-                    content = content
+                isLoadingContent = false,
+                content = content
             )
         }
 
-        subscribeOnDataSource(getArticlePersonalInfo()) {
-            info, state ->
+        subscribeOnDataSource(getArticlePersonalInfo()) { info, state ->
             info ?: return@subscribeOnDataSource null
             state.copy(
-                    isLike = info.isLike,
-                    isBookmark = info.isBookmark
+                isLike = info.isLike,
+                isBookmark = info.isBookmark
             )
         }
     }
@@ -94,7 +91,10 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
     override fun handleBookmark() {
         val info = currentState.toArticlePersonalInfo()
         repository.updateArticlePersonalInfo(info.copy(isBookmark = !info.isBookmark))
-        val msg = if (currentState.isBookmark) Notify.TextMessage("Add to bookmarks") else Notify.TextMessage("Remove from bookmarks")
+        val msg =
+            if (currentState.isBookmark) Notify.TextMessage("Add to bookmarks") else Notify.TextMessage(
+                "Remove from bookmarks"
+            )
         notify(msg)
     }
 
@@ -108,8 +108,9 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
         val msg = if (currentState.isLike) Notify.TextMessage("Mark is liked")
         else {
             Notify.ActionMessage(
-                    "Don`t like it anymore", "No, still like it",
-                    toggleLike
+                "Don`t like it anymore",
+                "No, still like it",
+                toggleLike
             )
         }
         notify(msg)
@@ -127,19 +128,18 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
     }
 
     override fun handleSearchMode(isSearch: Boolean) {
-        updateState {
-            it.copy(isSearch = isSearch, isShowMenu = false, searchPosition = 0)
-        }
+        updateState { it.copy(isSearch = isSearch, isShowMenu = false, searchPosition = 0) }
     }
 
     override fun handleSearch(query: String?) {
         query ?: return
 
-        val result = currentState.content.firstOrNull().indexesOf(query).map { it to it + query.length }
+        //в будущем (а может уже сейчас) при поиске нужно будет очищать текст от markdown-тегов.
+        val result = MarkdownParser.clear(currentState.content.firstOrNull() ?: "")
+            .indexesOf(query)
+            .map { it to it + query.length }
 
-        updateState {
-            state -> state.copy(searchQuery = query, searchResults = result)
-        }
+        updateState { it.copy(searchQuery = query, searchResults = result) }
     }
 
     override fun handleUpResult() {
@@ -159,27 +159,27 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
  * Стэйт(состояние) статьи
  */
 data class ArticleState(
-        val isAuth: Boolean = false, // пользователь авторизован
-        val isLoadingContent: Boolean = true, // контент загружается
-        val isLoadingReviews: Boolean = true, // отзывы загружается
-        val isLike: Boolean = false, // отмечено как Like
-        val isBookmark: Boolean = false, // в закладках
-        val isShowMenu: Boolean = false, // отображается меню
-        val isBigText: Boolean = false, // шрифт увеличен
-        val isDarkMode: Boolean = false, // темный режим
-        val isSearch: Boolean = false, // режим поиска
-        val searchQuery: String? = null, // поисковый запрос
-        val searchResults: List<Pair<Int, Int>> = emptyList(), // результаты поиска (стартовая и конечная позиции)
-        val searchPosition: Int = 0, // текущая позиция найденного результата
-        val shareLink: String? = null, // ссылка Share
-        val title: String? = null, // заголовок статьи
-        val category: String? = null, // категория
-        val categoryIcon: Any? = null, // иконка категории
-        val date: String? = null, // дата публикации
-        val author: Any? = null, // автор
-        val poster: String? = null,
-        val content: List<String> = emptyList(),
-        val reviews: List<Any> = emptyList()
+    val isAuth: Boolean = false, // пользователь авторизован
+    val isLoadingContent: Boolean = true, // контент загружается
+    val isLoadingReviews: Boolean = true, // отзывы загружается
+    val isLike: Boolean = false, // отмечено как Like
+    val isBookmark: Boolean = false, // в закладках
+    val isShowMenu: Boolean = false, // отображается меню
+    val isBigText: Boolean = false, // шрифт увеличен
+    val isDarkMode: Boolean = false, // темный режим
+    val isSearch: Boolean = false, // режим поиска
+    val searchQuery: String? = null, // поисковый запрос
+    val searchResults: List<Pair<Int, Int>> = emptyList(), // результаты поиска (стартовая и конечная позиции)
+    val searchPosition: Int = 0, // текущая позиция найденного результата
+    val shareLink: String? = null, // ссылка Share
+    val title: String? = null, // заголовок статьи
+    val category: String? = null, // категория
+    val categoryIcon: Any? = null, // иконка категории
+    val date: String? = null, // дата публикации
+    val author: Any? = null, // автор
+    val poster: String? = null,
+    val content: List<String> = emptyList(),
+    val reviews: List<Any> = emptyList()
 ) : VMState {
     override fun toBundle(): Bundle {
         val map = copy(content = emptyList(), isLoadingContent = true)
