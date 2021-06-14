@@ -163,7 +163,7 @@ sealed class Notify(val message: String) {
     ) : Notify(msg)
 }
 
-public interface VMState : Serializable{
+interface VMState : Serializable{
     fun toBundle(): Bundle
     fun fromBundle(bundle: Bundle): VMState?
 }

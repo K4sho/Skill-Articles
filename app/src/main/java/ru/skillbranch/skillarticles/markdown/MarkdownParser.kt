@@ -10,7 +10,8 @@ object MarkdownParser {
     private const val HEADER_GROUP = "(^#{1,6} .+?$)"
     private const val QUOTE_GROUP = "(^> .+?$)"
     private const val ITALIC_GROUP = "((?<!\\*)\\*[^*].*?[^*]?\\*(?!\\*)|(?<!_)_[^_].*?[^_]?_(?!_))"
-    private const val BOLD_GROUP = "((?<!\\*)\\*{2}[^*].*?[^*]?\\*{2}(?!\\*)|(?<!_)_{2}[^_].*?[^_]?_{2}(?!_))"
+    private const val BOLD_GROUP =
+        "((?<!\\*)\\*{2}[^*].*?[^*]?\\*{2}(?!\\*)|(?<!_)_{2}[^_].*?[^_]?_{2}(?!_))"
     private const val STRIKE_GROUP = "((?<!~)~{2}[^~].*?~{2}(?!~))"
     private const val RULE_GROUP = "(^[-_*]{3}$)"
     private const val INLINE_GROUP = "((?<!`)`[^`\\s].*?[`\\s]?`(?!`))"
@@ -19,9 +20,10 @@ object MarkdownParser {
     private const val ORDERED_LIST_ITEM_GROUP = "(^\\d{1,2}\\. .+$)"//"(^\\d{1,2}\\. \\s.+?$)"
     private const val IMAGE_GROUP = "(!\\[[^\\[\\]]*?\\]\\(.*?\\))"
 
-    private const val MARKDOWN_GROUPS = "$UNORDERED_LIST_ITEM_GROUP|$HEADER_GROUP|$QUOTE_GROUP|$ITALIC_GROUP" +
-            "|$BOLD_GROUP|$STRIKE_GROUP|$RULE_GROUP|$INLINE_GROUP|$LINK_GROUP|$BLOCK_CODE_GROUP" +
-            "|$ORDERED_LIST_ITEM_GROUP|$IMAGE_GROUP"
+    private const val MARKDOWN_GROUPS =
+        "$UNORDERED_LIST_ITEM_GROUP|$HEADER_GROUP|$QUOTE_GROUP|$ITALIC_GROUP" +
+                "|$BOLD_GROUP|$STRIKE_GROUP|$RULE_GROUP|$INLINE_GROUP|$LINK_GROUP|$BLOCK_CODE_GROUP" +
+                "|$ORDERED_LIST_ITEM_GROUP|$IMAGE_GROUP"
 
     private val elementsPattern by lazy { Pattern.compile(MARKDOWN_GROUPS, Pattern.MULTILINE) }
 
@@ -90,11 +92,11 @@ object MarkdownParser {
                 }
             }
 
-            when(group) {
+            when (group) {
                 // NOT FOUND -> BREAK
                 -1 -> break@loop
 
-                // UNORDERED LISt
+                // UNORDERED LIST
                 1 -> {
                     // text without "*. "
                     text = string.subSequence(startIndex.plus(2), endIndex)
@@ -175,7 +177,8 @@ object MarkdownParser {
                 // LINK
                 9 -> {
                     text = string.subSequence(startIndex, endIndex)
-                    val (title: String, link: String) = "\\[(.*)]\\((.*)\\)".toRegex().find(text)!!.destructured
+                    val (title: String, link: String) = "\\[(.*)]\\((.*)\\)".toRegex()
+                        .find(text)!!.destructured
                     val element = Element.Link(link, title)
                     parents.add(element)
                     lastStartIndex = endIndex
@@ -190,12 +193,13 @@ object MarkdownParser {
                 // ORDERED LIST
                 11 -> {
                     // text without "1. "
-                    val reg = "(^\\d{1,2}.)".toRegex().find(string.subSequence(startIndex, endIndex))
-                    if( reg != null )
-                    {
+                    val reg =
+                        "(^\\d{1,2}.)".toRegex().find(string.subSequence(startIndex, endIndex))
+                    if (reg != null) {
                         val order = reg!!.value
 
-                        text = string.subSequence(startIndex.plus(order.length.inc()), endIndex).toString()
+                        text = string.subSequence(startIndex.plus(order.length.inc()), endIndex)
+                            .toString()
 
                         // find inner elements
                         val subs = findElements(text)
@@ -210,20 +214,19 @@ object MarkdownParser {
                 12 -> {
                     // text without "![]()". Тут нужно найти все символы регулярки этой
                     text = string.subSequence(startIndex, endIndex)
-                    val (alt: String, link: String) = "(?:!\\[(.*?)\\]\\((.*?)\\))".toRegex().find(text)!!.destructured
+                    val (alt: String, link: String) = "(?:!\\[(.*?)\\]\\((.*?)\\))".toRegex()
+                        .find(text)!!.destructured
                     val sepLinkAndDesc = link.split('"')
-                    var textString: String = ""
-                    if (sepLinkAndDesc.size > 1){
-                        if (sepLinkAndDesc[1].isNotEmpty() || sepLinkAndDesc[1].isNotBlank()) {
-                            for (index in 1..sepLinkAndDesc.size-1) {
-                                textString += sepLinkAndDesc[index]
-                            }
-                        }
-                    }
-                    var realAlt: String? = null
-                    if (alt != "") {
-                        realAlt = alt
-                    }
+                    // Условия 2-х вложенных if можно объединить.
+                    //
+                    //Если условие isNotEmpty не сработает, то есть строка будет empty,
+                    // то второе условие (isNotBlank) будет ложно всегда, и смысла в нем нет.
+                    // Возможно подразумевалось &&?
+                    val textString = if (sepLinkAndDesc.size > 1 && (sepLinkAndDesc[1].isNotEmpty() || sepLinkAndDesc[1].isNotBlank())) {
+                        sepLinkAndDesc.subList(1, sepLinkAndDesc.size).joinToString(separator = "")
+                    } else ""
+
+                    val realAlt = alt.takeIf { it.isNotEmpty() }
                     val element = Element.Image(sepLinkAndDesc.first().trim(), realAlt, textString)
                     parents.add(element)
                     lastStartIndex = endIndex
@@ -314,9 +317,9 @@ sealed class Element {
     }
 
     data class Image(
-            val url: String,
-            val alt: String?,
-            override val text: CharSequence,
-            override val elements: List<Element> = emptyList()
+        val url: String,
+        val alt: String?,
+        override val text: CharSequence,
+        override val elements: List<Element> = emptyList()
     ) : Element()
 }

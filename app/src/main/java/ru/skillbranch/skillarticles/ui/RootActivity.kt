@@ -16,6 +16,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.core.text.getSpans
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.snackbar.Snackbar
@@ -37,15 +38,16 @@ class RootActivity : AppCompatActivity(), IArticleView {
     private val vb: ActivityRootBinding by viewBinding(ActivityRootBinding::inflate)
 
     private val vbBottombar
-    get() = vb.bottombar.binding
+        get() = vb.bottombar.binding
 
     private val vbSubmenu
-    get() = vb.submenu.binding
+        get() = vb.submenu.binding
 
     private lateinit var searchView: SearchView
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val bgColor by AttrValue(R.attr.colorSecondary)
+
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val fgColor by AttrValue(R.attr.colorOnSecondary)
 
@@ -58,15 +60,15 @@ class RootActivity : AppCompatActivity(), IArticleView {
         viewModel.observeState(this, ::renderUi)
         viewModel.observeSubState(this, ArticleState::toBottombarData, ::renderBotombar)
         viewModel.observeSubState(this, ArticleState::toSubmenuData, ::renderSubmenu)
-        viewModel.observeNotifications(this) {
-            renderNotification(it)
-        }
+        //Здесь также можно передать ссылку на метод.
+        viewModel.observeNotifications(this, ::renderNotification)
     }
 
     override fun renderUi(state: ArticleState) {
         delegate.localNightMode =
-                if (state.isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+            if (state.isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
 
+        //хардкод строки "loading" в большом количестве мест. Лучше вынести эту строку в ресурсы.
         with(vb.tvTextContent) {
             textSize = if (state.isBigText) 18f else 14f
             movementMethod = ScrollingMovementMethod()
@@ -79,7 +81,13 @@ class RootActivity : AppCompatActivity(), IArticleView {
         with(vb.toolbar) {
             title = state.title ?: "loading"
             subtitle = state.category ?: "loading"
-            if (state.categoryIcon != null) vb.toolbar.logo = getDrawable(state.categoryIcon as Int)
+            //в данном случае не критично, так как minApi=23, но лучше использовать
+            // ContextCompat.getDrawable, так как он учитывает уровень апи и в зависимости от него
+            // правильно получает иконку.
+            // Можно даже завести для этого extension-метод Context.getDrawableFrom,
+            // внутри которого и вызывать ContextCompat.getDrawable
+            if (state.categoryIcon != null)
+                logo = ContextCompat.getDrawable(this@RootActivity, state.categoryIcon as Int)
         }
 
         if (state.isLoadingContent) return
@@ -87,9 +95,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
         if (state.isSearch) {
             renderSearchResult(state.searchResults)
             renderSearchPosition(state.searchPosition)
-        } else {
-            clearSearchResult()
-        }
+        } else clearSearchResult()
     }
 
     /**
@@ -97,8 +103,9 @@ class RootActivity : AppCompatActivity(), IArticleView {
      */
     private fun renderNotification(notify: Notify) {
         // Привязываем вывод снэкбара к боттомбару
-        val snackbar = Snackbar.make(vb.coordinatorContainer, notify.message, Snackbar.LENGTH_LONG).setAnchorView(vb.bottombar)
-        when(notify) {
+        val snackbar = Snackbar.make(vb.coordinatorContainer, notify.message, Snackbar.LENGTH_LONG)
+            .setAnchorView(vb.bottombar)
+        when (notify) {
             is Notify.ActionMessage -> {
                 with(snackbar) {
                     setActionTextColor(getColor(R.color.color_accent_dark))
@@ -128,12 +135,15 @@ class RootActivity : AppCompatActivity(), IArticleView {
             btnSettings.setOnClickListener { viewModel.handleToggleMenu() }
 
             btnResultUp.setOnClickListener {
-                searchView.clearFocus()
+                //Что будет, если сбросить фокус вьюхи, у которой нет фокуса?
+                // Может быть ничего страшного и не произойдет, но я бы на всякий случай добавил
+                // проверку на наличие фокуса, дабы избжать лишних действий во вью.
+                if (searchView.hasFocus()) searchView.clearFocus()
                 viewModel.handleUpResult()
             }
 
             btnResultDown.setOnClickListener {
-                searchView.clearFocus()
+                if (searchView.hasFocus()) searchView.clearFocus()
                 viewModel.handleDownResult()
             }
 
@@ -149,16 +159,18 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
         clearSearchResult()
 
-        searchResult.forEach {
-            (start, end) ->
+        searchResult.forEach { (start, end) ->
 
             content.setSpan(
-                    SearchSpan(bgColor, fgColor),
-                    start,
-                    end,
-                    SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                SearchSpan(bgColor, fgColor),
+                start,
+                end,
+                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
+
+        //возможно при поиске стоит скроллить до первого вхождения?
+        renderSearchPosition(0)
     }
 
     override fun renderSearchPosition(searchPosition: Int) {
@@ -167,7 +179,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
         // remove old search focus span
         content.getSpans<SearchFocusSpan>()
-                .forEach { content.removeSpan(it) }
+            .forEach { content.removeSpan(it) }
 
         if (spans.isNotEmpty()) {
             // find position span
@@ -176,19 +188,17 @@ class RootActivity : AppCompatActivity(), IArticleView {
             Selection.setSelection(content, content.getSpanStart(result))
             // set new search focus span
             content.setSpan(
-                    SearchFocusSpan(bgColor, fgColor),
-                    content.getSpanStart(result),
-                    content.getSpanEnd(result),
-                    SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                SearchFocusSpan(bgColor, fgColor),
+                content.getSpanStart(result),
+                content.getSpanEnd(result),
+                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
     }
 
     override fun clearSearchResult() {
         val content = vb.tvTextContent.text as Spannable
-        content.getSpans<SearchSpan>().forEach {
-            content.removeSpan(it)
-        }
+        content.getSpans<SearchSpan>().forEach { content.removeSpan(it) }
     }
 
     override fun showSearchBar(resultsCount: Int, searchPosition: Int) {
@@ -200,9 +210,8 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun hideSearchBar() {
-        with(vb.bottombar) {
-            setSearchState(false)
-        }
+        //Для одного вызова метода необязательно использовать блок with.
+        vb.bottombar.setSearchState(false)
         vb.scroll.setMarginOptionally(bottom = dpToIntPx(0))
     }
 
@@ -219,8 +228,10 @@ class RootActivity : AppCompatActivity(), IArticleView {
         logo?.scaleType = ImageView.ScaleType.CENTER_CROP
         val lp = logo?.layoutParams as? Toolbar.LayoutParams
         lp?.let {
-            it.width = this.dpToIntPx(40)
-            it.height = this.dpToIntPx(40)
+            //лучше получить размер один раз, чтобы избежать лишних вычислений.
+            val logoSize = this.dpToIntPx(40)
+            it.width = logoSize
+            it.height = logoSize
             it.marginEnd = this.dpToIntPx(16)
             logo.layoutParams = it
         }
@@ -252,6 +263,12 @@ class RootActivity : AppCompatActivity(), IArticleView {
         searchView = (menuItem.actionView as SearchView)
         searchView.queryHint = getString(R.string.article_search_placeholder)
         // restore SearchView
+        //Не очень хорошо, когда из View-слоя идет доступ к состоянию вью-модели напрямую,
+        // но думаю в будущем в курсе это будет исправлено.
+        // Просто на заметку: в своих проектах так не делай :)
+        // Лучше сделать класс состояния вью, который будет отвечать за отрисовку состояния
+        // вью-модели и хранить в себе это отрисованное состояние. И брать данные оттуда.
+        // Таким образом можно добиться низкой связанности вью-слоя со слоем вью-модели.
         if (viewModel.currentState.isSearch) {
             menuItem.expandActionView()
             searchView.setQuery(viewModel.currentState.searchQuery, false)
@@ -260,7 +277,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
             searchView.clearFocus()
         }
 
-        menuItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener{
+        menuItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
                 viewModel.handleSearchMode(true)
                 return true
@@ -268,23 +285,30 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
             override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
                 viewModel.handleSearchMode(false)
+                //Скорее всего, при схлопывании строки поиска значок поиска перестает отображаться?
+                // Нужно добавить эту строку для того,
+                // чтобы не отрисовывался значок меню вместо поиска
+                invalidateOptionsMenu()
                 return true
             }
         })
 
         /**searchView.setOnSearchClickListener {
-            viewModel.handleSearchMode(true)
+        viewModel.handleSearchMode(true)
         }*/
 
-        searchView.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
-            override fun onQueryTextSubmit(p0: String?): Boolean {
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
                 searchView.clearFocus()
-                viewModel.handleSearch(p0)
+                viewModel.handleSearch(query)
                 return false
             }
-            override fun onQueryTextChange(p0: String?): Boolean {
-                if (!p0.isNullOrBlank()) {
-                    viewModel.handleSearch(p0)
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                //А если пользователь сотрет поисковую строку,
+                // то на экране будет отобаржаться поиск последней стертой буквы?
+                if (!newText.isNullOrBlank()) {
+                    viewModel.handleSearch(newText)
                 }
                 return false
             }
