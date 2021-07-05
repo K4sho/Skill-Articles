@@ -1,5 +1,6 @@
 package ru.skillbranch.skillarticles.markdown
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Typeface
 import android.text.SpannableStringBuilder
