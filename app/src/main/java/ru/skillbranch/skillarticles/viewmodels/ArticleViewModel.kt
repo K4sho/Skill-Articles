@@ -21,7 +21,8 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
     BaseViewModel<ArticleState>(ArticleState(), savedStateHandle), IArticleViewModel {
 
     private val repository = ArticleRepository
-
+    private var clearContent: String? = null
+        
     // В блоке инициализации подписываем на изменения
     init {
         savedStateHandle.setSavedStateProvider("state") {
@@ -62,7 +63,7 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
             )
         }
     }
-
+    
     override fun getArticleContent(): LiveData<List<String>?> {
         return repository.loadArticleContent(articleId)
     }
@@ -178,7 +179,7 @@ data class ArticleState(
     val date: String? = null, // дата публикации
     val author: Any? = null, // автор
     val poster: String? = null,
-    val content: List<String> = emptyList(),
+    val content: String = "Loading",
     val reviews: List<Any> = emptyList()
 ) : VMState {
     override fun toBundle(): Bundle {
@@ -212,7 +213,7 @@ data class ArticleState(
             date = map["date"] as String?,
             author = map["author"] as Any?,
             poster = map["poster"] as String?,
-            content = map["content"] as List<String>,
+            content = map["content"] as String,
             reviews = map["reviews"] as List<Any>,
         )
     }
