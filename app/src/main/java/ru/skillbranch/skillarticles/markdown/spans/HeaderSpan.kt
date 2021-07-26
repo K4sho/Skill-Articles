@@ -1,8 +1,10 @@
 package ru.skillbranch.skillarticles.markdown.spans
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.text.Layout
+import android.text.Spanned
 import android.text.TextPaint
 import android.text.style.LeadingMarginSpan
 import android.text.style.LineHeightSpan
@@ -40,6 +42,11 @@ class HeaderSpan constructor(
         6 to 0.85f
     )
 
+    var topExtraPadding = 0
+    var bottomExtraPadding = 0
+    lateinit var firstLineBounds: kotlin.ranges.IntRange
+    lateinit var lastLineBounds: kotlin.ranges.IntRange
+
     override fun chooseHeight(
         text: CharSequence?,
         start: Int,
@@ -48,15 +55,49 @@ class HeaderSpan constructor(
         lineHeight: Int,
         fm: Paint.FontMetricsInt?
     ) {
-        //TODO implement me
+        fm ?: return
+
+        text as Spanned
+        val spanStart = text.getSpanStart(this)
+        val spanEnd = text.getSpanEnd(this)
+
+        if (spanStart == start) {
+            originAscent = fm.ascent
+            fm.ascent = (fm.ascent - marginTop).toInt()
+            topExtraPadding = marginTop.toInt()
+            firstLineBounds = start..end.dec()
+        } else {
+            fm.ascent = originAscent
+        }
+
+        // line break добавляет 1 символ, поэтому .dec()
+        if (spanEnd == end.dec()) {
+            val originDescent= fm.descent
+            val originHeight = fm.descent - originAscent
+            fm.descent = (originHeight * linePadding + marginBottom).toInt()
+            bottomExtraPadding = fm.descent - originDescent
+            lastLineBounds = start..end.dec()
+        }
+
+        fm.top = fm.ascent
+        fm.bottom = fm.descent
     }
 
+    // измерение шрифта
     override fun updateMeasureState(paint: TextPaint) {
-        //TODO implement me
+        with(paint) {
+            textSize *= sizes.getOrElse(level) { 1f }
+            isFakeBoldText = true
+        }
     }
 
+    // отрисовка шрифта
     override fun updateDrawState(tp: TextPaint) {
-        //TODO implement me
+        with(tp) {
+            textSize *= sizes.getOrElse(level) { 1f }
+            isFakeBoldText = true
+            color = textColor
+        }
     }
 
     override fun drawLeadingMargin(
@@ -64,15 +105,83 @@ class HeaderSpan constructor(
         lineTop: Int, lineBaseline: Int, lineBottom: Int, text: CharSequence?, lineStart: Int,
         lineEnd: Int, isFirstLine: Boolean, layout: Layout?
     ) {
-        //TODO implement me
+
+        // for last line for 1 or 2 level
+        if (level in 1..2 && (text as Spanned).getSpanEnd(this) == lineEnd) {
+            paint.forLine {
+                val lh = (paint.descent() - paint.ascent()) * sizes.getOrElse(level) { 1f }
+                val lineOffset = lineBaseline + lh * linePadding
+
+                // линия от левого края до конца канвы с оффсетом = lineOffset
+                canvas.drawLine(
+                    0f,
+                    lineOffset,
+                    canvas.width.toFloat(),
+                    lineOffset,
+                    paint
+                )
+            }
+        }
+
+        // if (level in 1..2) {
+        //    val oldSize = paint.textSize
+        //    paint.textSize *= sizes[level]!!
+        //    canvas.drawFontLines(lineTop,lineBottom, lineBaseline, paint)
+        //    paint.textSize = oldSize
+        //
     }
 
     override fun getLeadingMargin(first: Boolean): Int {
-        //TODO implement me
         return 0
     }
 
     private inline fun Paint.forLine(block: () -> Unit) {
-        //TODO implement me
+        val oldColor = color
+        val oldStyle = style
+        val oldWidth = strokeWidth
+
+        strokeWidth = 0f
+        color = dividerColor
+        style = Paint.Style.STROKE
+
+        block()
+
+        color = oldColor
+        style = oldStyle
+        strokeWidth = oldWidth
+    }
+
+    private fun Canvas.drawFontLines(
+        top: Int,
+        bottom: Int,
+        lineBaseline: Int,
+        paint: Paint
+    ) {
+        // demonstration 1:57:45, 1:59:10
+        // top
+        drawLine(0f, top + 0f, width + 0f, top + 0f, Paint().apply { color = Color.BLUE })
+        // bottom
+        drawLine(0f, bottom + 0f, width + 0f, bottom + 0f, Paint().apply { color = Color.GREEN })
+        // baseline
+        drawLine(
+            0f,
+            lineBaseline + 0f,
+            width + 0f,
+            lineBaseline + 0f,
+            Paint().apply { color = Color.MAGENTA })
+        // ascent
+        drawLine(
+            0f,
+            paint.ascent() + lineBaseline,
+            width + 0f,
+            paint.ascent() + lineBaseline,
+            Paint().apply { color = Color.BLACK })
+        // descent
+        drawLine(
+            0f,
+            paint.descent() + lineBaseline,
+            width + 0f,
+            paint.descent() + lineBaseline,
+            Paint().apply { color = Color.RED })
     }
 }
