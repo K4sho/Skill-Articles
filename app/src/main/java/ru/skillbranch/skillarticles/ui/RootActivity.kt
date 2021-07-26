@@ -25,6 +25,7 @@ import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.databinding.ActivityRootBinding
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 import ru.skillbranch.skillarticles.extensions.setMarginOptionally
+import ru.skillbranch.skillarticles.markdown.MarkdownBuilder
 import ru.skillbranch.skillarticles.ui.custom.SearchFocusSpan
 import ru.skillbranch.skillarticles.ui.custom.SearchSpan
 import ru.skillbranch.skillarticles.ui.delegates.AttrValue
@@ -74,7 +75,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
             textSize = if (state.isBigText) 18f else 14f
             movementMethod = LinkMovementMethod()
             
-            MarkdownBuilder(context).markdownToSpan(data.content).run { setText(this, TextView.BufferType.SPANNABLE) }
+            MarkdownBuilder(context).markdownToSpan(state.content).run { setText(this, TextView.BufferType.SPANNABLE) }
         }
 
         // bind toolbar
