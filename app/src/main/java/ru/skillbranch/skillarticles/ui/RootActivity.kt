@@ -71,10 +71,9 @@ class RootActivity : AppCompatActivity(), IArticleView {
         //хардкод строки "loading" в большом количестве мест. Лучше вынести эту строку в ресурсы.
         with(vb.tvTextContent) {
             textSize = if (state.isBigText) 18f else 14f
-            movementMethod = ScrollingMovementMethod()
-            val content = if (state.isLoadingContent) "loading" else state.content.first()
-            if (text.toString() == content) return@with
-            setText(content, TextView.BufferType.SPANNABLE)
+            movementMethod = LinkMovementMethod()
+            
+            MarkdownBuilder(context).markdownToSpan(data.content).run { setText(this, TextView.BufferType.SPANNABLE) }
         }
 
         // bind toolbar
