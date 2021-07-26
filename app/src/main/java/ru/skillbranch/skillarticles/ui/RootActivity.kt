@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.Selection
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.method.LinkMovementMethod
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.Menu
