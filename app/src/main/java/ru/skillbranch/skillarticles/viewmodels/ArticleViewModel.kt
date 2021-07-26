@@ -135,9 +135,10 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
     override fun handleSearch(query: String?) {
         query ?: return
 
+        if (clearContent == null) clearContent = MarkdownParser.clear(currentState.content)
+        
         //в будущем (а может уже сейчас) при поиске нужно будет очищать текст от markdown-тегов.
-        val result = MarkdownParser.clear(currentState.content.firstOrNull() ?: "")
-            .indexesOf(query)
+        val result = clearContent.indexesOf(query)
             .map { it to it + query.length }
 
         updateState { it.copy(searchQuery = query, searchResults = result) }
