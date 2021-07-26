@@ -184,7 +184,7 @@ data class ArticleState(
     val reviews: List<Any> = emptyList()
 ) : VMState {
     override fun toBundle(): Bundle {
-        val map = copy(content = emptyList(), isLoadingContent = true)
+        val map = copy(content = "Loading", isLoadingContent = true)
             .asMap()
             .toList()
             .toTypedArray()
