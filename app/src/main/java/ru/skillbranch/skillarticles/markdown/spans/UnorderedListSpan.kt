@@ -32,7 +32,7 @@ class UnorderedListSpan(
             paint.withCustomColor {
                 canvas.drawCircle(
                     gapWidth + currentMarginLocation + bulletRadius,
-                    (lineTop + layout.getLineBottomWithoutPadding(layout.getLineForOffset(lineStart))) / 2f,
+                    (lineTop + lineBottom) / 2f,
                     bulletRadius,
                     paint
                 )
