@@ -38,17 +38,17 @@ class IconLinkSpan(
         bottom: Int,
         paint: Paint
     ) {
-        val textStart = x + iconSize + padding
+        val textStart = x + iconSize + gap
         paint.forLine {
             path.reset()
-            path.moveTo(textStart, y + paint.descent())
-            path.lineTo(textStart + textWidth, y + paint.descent())
+            path.moveTo(textStart, bottom.toFloat())
+            path.lineTo(textStart + textWidth, bottom.toFloat())
             canvas.drawPath(path, paint)
         }
 
         canvas.save()
-        val trY = y + paint.descent() - linkDrawable.bounds.bottom
-        canvas.translate(x + padding / 2, trY)
+        val trY = (bottom - linkDrawable.bounds.bottom.toFloat())
+        canvas.translate(x + gap / 2, trY)
         linkDrawable.draw(canvas)
         canvas.restore()
 
@@ -67,15 +67,17 @@ class IconLinkSpan(
     ): Int {
         if (fm != null) {
             iconSize = fm.descent - fm.ascent // fontSize
-            linkDrawable.setBounds(0, 0, iconSize, iconSize)
         }
-        textWidth = paint.measureText(text.toString(), start, end)
-        return (iconSize + padding + textWidth).toInt()
+        if (iconSize != 0) {
+            linkDrawable.setBounds(0, 0, iconSize, iconSize)
+            textWidth = paint.measureText(text.toString(), start, end)
+        }
+        
+        return (iconSize + gap + textWidth).toInt()
     }
 
 
     private inline fun Paint.forLine(block: () -> Unit) {
-        val oldColor = color
         val oldStyle = style
         val oldWidth = strokeWidth
 
@@ -85,8 +87,8 @@ class IconLinkSpan(
         strokeWidth = 0f
 
         block()
-
-        color = oldColor
+        
+        pathEffect = null
         style = oldStyle
         strokeWidth = oldWidth
     }
