@@ -13,7 +13,7 @@ import androidx.annotation.VisibleForTesting
 class IconLinkSpan(
     private val linkDrawable: Drawable,
     @Px
-    private val padding: Float,
+    private val gap: Float,
     @ColorInt
     private val textColor: Int,
     dotWidth: Float = 6f
