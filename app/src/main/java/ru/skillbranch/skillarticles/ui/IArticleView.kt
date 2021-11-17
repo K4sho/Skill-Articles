@@ -1,6 +1,5 @@
 package ru.skillbranch.skillarticles.ui
 
-import ru.skillbranch.skillarticles.data.ArticleData
 import ru.skillbranch.skillarticles.viewmodels.ArticleState
 import ru.skillbranch.skillarticles.viewmodels.BottombarData
 import ru.skillbranch.skillarticles.viewmodels.SubmenuData
@@ -60,4 +59,9 @@ interface IArticleView {
      * Отрисовка всего UI на слое представления
      */
     fun renderUi(data: ArticleState)
+
+    /**
+     *
+     */
+    fun setupCopyListener()
 }

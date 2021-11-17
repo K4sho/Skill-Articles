@@ -2,6 +2,7 @@ package ru.skillbranch.skillarticles.ui
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.PersistableBundle
 import android.text.Selection
 import android.text.Spannable
 import android.text.SpannableString
@@ -25,9 +26,9 @@ import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.databinding.ActivityRootBinding
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 import ru.skillbranch.skillarticles.extensions.setMarginOptionally
-import ru.skillbranch.skillarticles.markdown.MarkdownBuilder
-import ru.skillbranch.skillarticles.ui.custom.SearchFocusSpan
-import ru.skillbranch.skillarticles.ui.custom.SearchSpan
+import ru.skillbranch.skillarticles.ui.custom.markdown.MarkdownBuilder
+import ru.skillbranch.skillarticles.ui.custom.spans.SearchFocusSpan
+import ru.skillbranch.skillarticles.ui.custom.spans.SearchSpan
 import ru.skillbranch.skillarticles.ui.delegates.AttrValue
 import ru.skillbranch.skillarticles.ui.delegates.viewBinding
 import ru.skillbranch.skillarticles.viewmodels.*
@@ -47,23 +48,25 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
     private lateinit var searchView: SearchView
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val bgColor by AttrValue(R.attr.colorSecondary)
-
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val fgColor by AttrValue(R.attr.colorOnSecondary)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setupToolbar()
         setupSubmenu()
         setupBottombar()
+        setupToolbar()
+        setupCopyListener()
 
         viewModel.observeState(this, ::renderUi)
         viewModel.observeSubState(this, ArticleState::toBottombarData, ::renderBotombar)
         viewModel.observeSubState(this, ArticleState::toSubmenuData, ::renderSubmenu)
-        //Здесь также можно передать ссылку на метод.
-        viewModel.observeNotifications(this, ::renderNotification)
+        viewModel.observeNotifications(this) {
+            renderNotification(it)
+        }
+    }
+
+    override fun setupCopyListener() {
+//        vb.tvTextContent.setCopyListener { copy ->
+//
+//        }
     }
 
     override fun renderUi(state: ArticleState) {
@@ -74,8 +77,9 @@ class RootActivity : AppCompatActivity(), IArticleView {
         with(vb.tvTextContent) {
             textSize = if (state.isBigText) 18f else 14f
             movementMethod = LinkMovementMethod()
-            
-            MarkdownBuilder(context).markdownToSpan(state.content).run { setText(this, TextView.BufferType.SPANNABLE) }
+
+            MarkdownBuilder(context).markdownToSpan(state.content)
+                .run { setText(this, TextView.BufferType.SPANNABLE) }
         }
 
         // bind toolbar
@@ -108,9 +112,11 @@ class RootActivity : AppCompatActivity(), IArticleView {
             .setAnchorView(vb.bottombar)
         when (notify) {
             is Notify.ActionMessage -> {
+                val (_, label, handler) = notify
+
                 with(snackbar) {
                     setActionTextColor(getColor(R.color.color_accent_dark))
-                    setAction(notify.actionLabel) { notify.actionHandler.invoke() }
+                    setAction(label) { handler.invoke() }
                 }
             }
             is Notify.ErrorMessage -> {
@@ -156,45 +162,11 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
-        val content = vb.tvTextContent.text as Spannable
-
-        clearSearchResult()
-
-        searchResult.forEach { (start, end) ->
-
-            content.setSpan(
-                SearchSpan(bgColor, fgColor),
-                start,
-                end,
-                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-
-        //возможно при поиске стоит скроллить до первого вхождения?
-        renderSearchPosition(0)
+        vb.tvTextContent.renderSearchResult(searchResult)
     }
 
     override fun renderSearchPosition(searchPosition: Int) {
-        val content = vb.tvTextContent.text as Spannable
-        val spans = content.getSpans<SearchSpan>()
-
-        // remove old search focus span
-        content.getSpans<SearchFocusSpan>()
-            .forEach { content.removeSpan(it) }
-
-        if (spans.isNotEmpty()) {
-            // find position span
-            val result = spans[searchPosition]
-            // move to selection
-            Selection.setSelection(content, content.getSpanStart(result))
-            // set new search focus span
-            content.setSpan(
-                SearchFocusSpan(bgColor, fgColor),
-                content.getSpanStart(result),
-                content.getSpanEnd(result),
-                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
+        vb.tvTextContent.renderSearchPosition(searchResult.getOrNull(searchPosition))
     }
 
     override fun clearSearchResult() {
@@ -264,12 +236,6 @@ class RootActivity : AppCompatActivity(), IArticleView {
         searchView = (menuItem.actionView as SearchView)
         searchView.queryHint = getString(R.string.article_search_placeholder)
         // restore SearchView
-        //Не очень хорошо, когда из View-слоя идет доступ к состоянию вью-модели напрямую,
-        // но думаю в будущем в курсе это будет исправлено.
-        // Просто на заметку: в своих проектах так не делай :)
-        // Лучше сделать класс состояния вью, который будет отвечать за отрисовку состояния
-        // вью-модели и хранить в себе это отрисованное состояние. И брать данные оттуда.
-        // Таким образом можно добиться низкой связанности вью-слоя со слоем вью-модели.
         if (viewModel.currentState.isSearch) {
             menuItem.expandActionView()
             searchView.setQuery(viewModel.currentState.searchQuery, false)
@@ -289,6 +255,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
                 //Скорее всего, при схлопывании строки поиска значок поиска перестает отображаться?
                 // Нужно добавить эту строку для того,
                 // чтобы не отрисовывался значок меню вместо поиска
+                invalida
                 invalidateOptionsMenu()
                 return true
             }

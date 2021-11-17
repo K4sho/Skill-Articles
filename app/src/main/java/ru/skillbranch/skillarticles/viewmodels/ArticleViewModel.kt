@@ -14,7 +14,7 @@ import ru.skillbranch.skillarticles.extensions.format
 import ru.skillbranch.skillarticles.extensions.toAppSettings
 import ru.skillbranch.skillarticles.extensions.toArticlePersonalInfo
 import ru.skillbranch.skillarticles.extensions.indexesOf
-import ru.skillbranch.skillarticles.markdown.MarkdownParser
+import ru.skillbranch.skillarticles.ui.custom.markdown.MarkdownParser
 import java.util.*
 
 class ArticleViewModel(private val articleId: String, savedStateHandle: SavedStateHandle) :
