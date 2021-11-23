@@ -14,7 +14,7 @@ import androidx.core.text.inSpans
 import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.extensions.attrValue
 import ru.skillbranch.skillarticles.extensions.dpToPx
-import ru.skillbranch.skillarticles.ui.custom.markdown.spans.*
+import ru.skillbranch.skillarticles.ui.custom.spans.*
 
 class MarkdownBuilder(context: Context) {
     private val colorSecondary = context.attrValue(R.attr.colorSecondary)
