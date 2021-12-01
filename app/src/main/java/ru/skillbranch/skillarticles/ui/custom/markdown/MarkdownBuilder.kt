@@ -31,10 +31,9 @@ class MarkdownBuilder(context: Context) {
     private val cornerRadius = context.dpToPx(8)
     private val linkIcon = ContextCompat.getDrawable(context, R.drawable.ic_baseline_link_24)!!
 
-    fun markdownToSpan(string: String): SpannedString {
-        val markdown = MarkdownParser.parse(string)
+    fun markdownToSpan(textContent: MarkdownElement.Text): SpannedString {
         return buildSpannedString {
-            markdown.elements.forEach { buildElement(element = it, this) }
+            textContent.elements.forEach { buildElement(element = it, this) }
         }
     }
 

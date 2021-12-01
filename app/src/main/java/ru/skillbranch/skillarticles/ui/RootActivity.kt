@@ -162,11 +162,11 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
-        vb.tvTextContent.renderSearchResult(searchResult)
+        //vb.tvTextContent.renderSearchResult(searchResult)
     }
 
-    override fun renderSearchPosition(searchPosition: Int) {
-        vb.tvTextContent.renderSearchPosition(searchResult.getOrNull(searchPosition))
+    override fun renderSearchPosition(searchPosition: Int, searchResult: List<Pair<Int, Int>>) {
+        //vb.tvTextContent.renderSearchPosition(searchResult.getOrNull(searchPosition))
     }
 
     override fun clearSearchResult() {

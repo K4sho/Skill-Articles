@@ -312,7 +312,7 @@ sealed class Element {
 
     data class BlockCode(
         val type: Type = Type.MIDDLE,
-        override val text: CharSequence,
+        override val text: String,
         override val elements: List<Element> = emptyList()
     ) : Element() {
         enum class Type { START, END, MIDDLE, SINGLE }
@@ -321,7 +321,7 @@ sealed class Element {
     data class Image(
         val url: String,
         val alt: String?,
-        override val text: CharSequence,
+        override val text: String,
         override val elements: List<Element> = emptyList()
     ) : Element()
 }

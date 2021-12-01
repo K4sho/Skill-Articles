@@ -4,8 +4,10 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.core.view.children
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
+import ru.skillbranch.skillarticles.extensions.setPaddingOptionally
 import kotlin.properties.Delegates
 
 class MarkdownContentView @JvmOverloads constructor(
@@ -66,6 +68,60 @@ class MarkdownContentView @JvmOverloads constructor(
     }
 
     fun setContent(content: List<MarkdownElement>) {
+        if (elements.isNotEmpty()) return
+        elements = content
+        content.forEach {
+            when (it) {
+                is MarkdownElement.Text -> {
+                    val tv = MarkdownTextView(context, textSize).apply {
+                        setPaddingOptionally(left = padding, right = padding)
+                    }
 
+                    MarkdownBuilder(context)
+                        .markdownToSpan(it)
+                        .run {
+                            tv.setText(this, TextView.BufferType.SPANNABLE)
+                        }
+
+                    addView(tv)
+                }
+                is MarkdownElement.Image -> {
+                    val iv = MarkdownImageView(
+                        context,
+                        textSize,
+                        it.image.url,
+                        it.image.text,
+                        it.image.alt
+                    )
+                    addView(iv)
+                }
+                is MarkdownElement.Scroll -> {
+                    val sv = MarkdownCodeView(
+                        context,
+                        textSize,
+                        it.blockCode.text
+                    )
+                    sv.copyListener = copyListener
+                    addView(sv)
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
+        TODO("Not yet implemented")
+    }
+
+    fun renderSearchPosition(searchPosition: Pair<Int, Int>) {
+        TODO("Not yet implemented")
+    }
+
+    fun clearSearchResult() {
+        TODO("Not yet implemented")
+    }
+
+    fun setCopyListener(listener: (String) -> Unit) {
+        copyListener = listener
     }
 }
