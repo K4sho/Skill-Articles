@@ -30,40 +30,66 @@ object MarkdownParser {
     /**
      * Парсит маркдаун текст на элементы
      */
-    fun parse(string: String): MarkdownText {
+    fun parse(string: String): List<MarkdownElement> {
         val elements = mutableListOf<Element>()
         elements.addAll(findElements(string))
 
-        return MarkdownText(elements)
-    }
-
-    /**
-     * Очищает маркдаун разметку, оставляя лишь чистый текст
-     */
-    fun clear(string: String?): String? {
-        if (string == null) return null
-        val markdown = parse(string)
-        return StringBuilder().apply {
-            markdown.elements.forEach {
-                if (it.elements.isNotEmpty())
-                    clear(it.text.toString(), this)
-                else
-                    apply { append(it.text) }
+        return elements.fold(mutableListOf()) { acc, element ->
+            val last = acc.lastOrNull()
+            when (element) {
+                is Element.Image -> acc.add(
+                    MarkdownElement.Image(
+                        element,
+                        last?.bounds?.second ?: 0
+                    )
+                )
+                is Element.BlockCode -> acc.add(
+                    MarkdownElement.Scroll(
+                        element,
+                        last?.bounds?.second ?: 0
+                    )
+                )
+                else -> {
+                    if (last is MarkdownElement.Text) last.elements.add(element)
+                    else acc.add(
+                        MarkdownElement.Text(
+                            mutableListOf(element),
+                            last?.bounds?.second ?: 0
+                        )
+                    )
+                }
             }
-        }.toString()
-    }
-
-    private fun clear(string: String, builder: StringBuilder) {
-        val markdown = parse(string)
-        builder.apply {
-            markdown.elements.forEach {
-                if (it.elements.isNotEmpty())
-                    clear(it.text.toString(), this)
-                else
-                    apply { append(it.text) }
-            }
+            acc
         }
     }
+
+//    /**
+//     * Очищает маркдаун разметку, оставляя лишь чистый текст
+//     */
+//    fun clear(string: String?): String? {
+//        if (string == null) return null
+//        val markdown = parse(string)
+//        return StringBuilder().apply {
+//            markdown.elements.forEach {
+//                if (it.elements.isNotEmpty())
+//                    clear(it.text.toString(), this)
+//                else
+//                    apply { append(it.text) }
+//            }
+//        }.toString()
+//    }
+//
+//    private fun clear(string: String, builder: StringBuilder) {
+//        val markdown = parse(string)
+//        builder.apply {
+//            markdown.elements.forEach {
+//                if (it.elements.isNotEmpty())
+//                    clear(it.text.toString(), this)
+//                else
+//                    apply { append(it.text) }
+//            }
+//        }
+//    }
 
     fun findElements(string: CharSequence): List<Element> {
         val parents = mutableListOf<Element>()
@@ -186,7 +212,7 @@ object MarkdownParser {
                 // Block Code
                 10 -> {
                     text = string.subSequence(startIndex.plus(3), endIndex.plus(-3))
-                    val element = Element.BlockCode(text = text)
+                    val element = Element.BlockCode(text = text as String)
                     parents.add(element)
                     lastStartIndex = endIndex
                 }

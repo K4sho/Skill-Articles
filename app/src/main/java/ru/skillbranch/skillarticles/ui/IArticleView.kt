@@ -13,7 +13,7 @@ interface IArticleView {
     /**
      * Отрисовка и перевод фокуса на текущую позицию
      */
-    fun renderSearchPosition(searchPosition: Int)
+    fun renderSearchPosition(searchPosition: Int, searchResult: List<Pair<Int, Int>>)
 
     /**
      * Очистка результата поиска

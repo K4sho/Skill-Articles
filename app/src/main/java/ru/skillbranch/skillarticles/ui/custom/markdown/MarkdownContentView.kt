@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.view.children
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
+import ru.skillbranch.skillarticles.extensions.groupByBounds
 import ru.skillbranch.skillarticles.extensions.setPaddingOptionally
 import kotlin.properties.Delegates
 
@@ -110,15 +111,43 @@ class MarkdownContentView @JvmOverloads constructor(
     }
 
     fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
-        TODO("Not yet implemented")
+        children.forEach { view ->
+            view as IMarkdownView
+            view.clearSearchResult()
+        }
+
+        if (searchResult.isEmpty()) return
+
+        val bounds = elements.map { it.bounds }
+        val result = searchResult.groupByBounds(bounds)
+        children.forEachIndexed { index, view ->
+            view as IMarkdownView
+            //search for child with markdown element offset
+            view.renderSearchResult(result[index], elements[index].offset)
+        }
     }
 
-    fun renderSearchPosition(searchPosition: Pair<Int, Int>) {
-        TODO("Not yet implemented")
+    fun renderSearchPosition(searchPosition: Pair<Int, Int>?) {
+        searchPosition ?: return
+        val bounds = elements.map { it.bounds }
+
+        val index = bounds.indexOfFirst { (start, end) ->
+            val boundRange = start..end
+            val (startPos, endPos) = searchPosition
+            startPos in boundRange && endPos in boundRange
+        }
+
+        if (index == -1) return
+        val view = getChildAt(index)
+        view as IMarkdownView
+        view.renderSearchPosition(searchPosition, elements[index].offset)
     }
 
     fun clearSearchResult() {
-        TODO("Not yet implemented")
+        children.forEach { view ->
+            view as IMarkdownView
+            view.clearSearchResult()
+        }
     }
 
     fun setCopyListener(listener: (String) -> Unit) {

@@ -1,5 +1,8 @@
 package ru.skillbranch.skillarticles.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.PersistableBundle
@@ -64,33 +67,28 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun setupCopyListener() {
-//        vb.tvTextContent.setCopyListener { copy ->
-//
-//        }
+        vb.tvTextContent.setCopyListener { copy ->
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Copied code", copy)
+            clipboard.setPrimaryClip(clip)
+            viewModel.handleCopyCode()
+        }
     }
 
     override fun renderUi(state: ArticleState) {
         delegate.localNightMode =
             if (state.isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
 
-        //хардкод строки "loading" в большом количестве мест. Лучше вынести эту строку в ресурсы.
         with(vb.tvTextContent) {
             textSize = if (state.isBigText) 18f else 14f
-            movementMethod = LinkMovementMethod()
-
-            MarkdownBuilder(context).markdownToSpan(state.content)
-                .run { setText(this, TextView.BufferType.SPANNABLE) }
+            isLoading = state.content.isEmpty()
+            setContent(state.content)
         }
 
         // bind toolbar
         with(vb.toolbar) {
             title = state.title ?: "loading"
             subtitle = state.category ?: "loading"
-            //в данном случае не критично, так как minApi=23, но лучше использовать
-            // ContextCompat.getDrawable, так как он учитывает уровень апи и в зависимости от него
-            // правильно получает иконку.
-            // Можно даже завести для этого extension-метод Context.getDrawableFrom,
-            // внутри которого и вызывать ContextCompat.getDrawable
             if (state.categoryIcon != null)
                 logo = ContextCompat.getDrawable(this@RootActivity, state.categoryIcon as Int)
         }
@@ -99,7 +97,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
         if (state.isSearch) {
             renderSearchResult(state.searchResults)
-            renderSearchPosition(state.searchPosition)
+            renderSearchPosition(state.searchPosition, state.searchResults)
         } else clearSearchResult()
     }
 
@@ -162,16 +160,15 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
-        //vb.tvTextContent.renderSearchResult(searchResult)
+        vb.tvTextContent.renderSearchResult(searchResult)
     }
 
     override fun renderSearchPosition(searchPosition: Int, searchResult: List<Pair<Int, Int>>) {
-        //vb.tvTextContent.renderSearchPosition(searchResult.getOrNull(searchPosition))
+        vb.tvTextContent.renderSearchPosition(searchResult.getOrNull(searchPosition))
     }
 
     override fun clearSearchResult() {
-        val content = vb.tvTextContent.text as Spannable
-        content.getSpans<SearchSpan>().forEach { content.removeSpan(it) }
+        vb.tvTextContent.clearSearchResult()
     }
 
     override fun showSearchBar(resultsCount: Int, searchPosition: Int) {
@@ -255,7 +252,6 @@ class RootActivity : AppCompatActivity(), IArticleView {
                 //Скорее всего, при схлопывании строки поиска значок поиска перестает отображаться?
                 // Нужно добавить эту строку для того,
                 // чтобы не отрисовывался значок меню вместо поиска
-                invalida
                 invalidateOptionsMenu()
                 return true
             }
