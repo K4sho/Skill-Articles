@@ -1,4 +1,4 @@
-package ru.skillbranch.skillarticles.ui.custom.markdown
+package ru.skillbranch.skillarticles.data.repositories
 
 import android.util.Log
 import java.util.regex.Pattern

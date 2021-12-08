@@ -174,6 +174,7 @@ class MarkdownImageView private constructor(
         va.start()
     }
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         var usedHeight = 0
         val bodyWidth = r - l - paddingLeft - paddingRight
@@ -204,6 +205,7 @@ class MarkdownImageView private constructor(
         )
     }
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         var usedHeight = 0
         val width = View.getDefaultSize(suggestedMinimumWidth, widthMeasureSpec)
