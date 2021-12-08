@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.os.Parcel
+import android.os.Parcelable
 import android.text.Selection
 import android.text.Spannable
 import android.view.View
@@ -224,5 +226,32 @@ class MarkdownCodeView private constructor(
         ivCopy.imageTintList = ColorStateList.valueOf(textColor)
         (background as GradientDrawable).color = ColorStateList.valueOf(bgColor)
         tvCodeView.setTextColor(textColor)
+    }
+
+    override fun onSaveInstanceState(): Parcelable? {
+        val savedState = SavedState(super.onSaveInstanceState())
+        savedState.ssIsDark = isDark
+        return savedState
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        super.onRestoreInstanceState(state)
+        if (state is SavedState) {
+            isManual = true
+            isDark = state.ssIsDark
+            applyColors()
+        }
+    }
+
+    private class SavedState : BaseSavedState, Parcelable {
+        var ssIsDark: Boolean = false
+
+        constructor(superState: Parcelable?) : super(superState) {
+
+        }
+
+        constructor(src: Parcel) : super(src) {
+            ssIsDark = src.readInt() == 1
+        }
     }
 }

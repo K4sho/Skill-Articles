@@ -38,10 +38,9 @@ val Context.isNetworkAvailable: Boolean
         }
     }
 
-fun Context.attrValue(@AttrRes id: Int): Int {
+fun Context.attrValue(@AttrRes id: Int, needRes: Boolean = true): Int {
     val value = TypedValue()
-    if (theme.resolveAttribute(id, value, true)) {
-        value.data
+    if (theme.resolveAttribute(id, value, needRes)) {
         return value.data
     } else {
         error("can not attribute for : $id")

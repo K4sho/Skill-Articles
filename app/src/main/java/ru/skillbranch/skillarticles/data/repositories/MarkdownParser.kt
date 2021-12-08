@@ -18,7 +18,7 @@ object MarkdownParser {
     private const val LINK_GROUP = "(\\[[^\\[\\]]*?]\\(.+?\\)|^\\[*?]\\(.*?\\))"
     private const val BLOCK_CODE_GROUP = "((?<!`)`{3}[^` ][\\s\\S]*?[^`]?`{3}(?![^`\n]))"
     private const val ORDERED_LIST_ITEM_GROUP = "(^\\d{1,2}\\. .+$)"//"(^\\d{1,2}\\. \\s.+?$)"
-    private const val IMAGE_GROUP = "(!\\[[^\\[\\]]*?\\]\\(.*?\\))"
+    private const val IMAGE_GROUP = "(^!\\[[^\\[\\]]*?\\]\\(.*?\\)$)"
 
     private const val MARKDOWN_GROUPS =
         "$UNORDERED_LIST_ITEM_GROUP|$HEADER_GROUP|$QUOTE_GROUP|$ITALIC_GROUP" +
@@ -238,24 +238,9 @@ object MarkdownParser {
                 }
                 // IMAGE
                 12 -> {
-                    // text without "![]()". Тут нужно найти все символы регулярки этой
                     text = string.subSequence(startIndex, endIndex)
-                    val (alt: String, link: String) = "(?:!\\[(.*?)\\]\\((.*?)\\))".toRegex()
-                        .find(text)!!.destructured
-                    val sepLinkAndDesc = link.split('"')
-                    // Условия 2-х вложенных if можно объединить.
-                    //
-                    //Если условие isNotEmpty не сработает, то есть строка будет empty,
-                    // то второе условие (isNotBlank) будет ложно всегда, и смысла в нем нет.
-                    // Возможно подразумевалось &&?
-                    val textString =
-                        if (sepLinkAndDesc.size > 1 && (sepLinkAndDesc[1].isNotEmpty() || sepLinkAndDesc[1].isNotBlank())) {
-                            sepLinkAndDesc.subList(1, sepLinkAndDesc.size)
-                                .joinToString(separator = "")
-                        } else ""
-
-                    val realAlt = alt.takeIf { it.isNotEmpty() }
-                    val element = Element.Image(sepLinkAndDesc.first().trim(), realAlt, textString)
+                    val (alt, url, title) = "^!\\[([^\\[\\]]*?)?]\\((.*?) \"(.*?)\"\\)$".toRegex().find(text)!!.destructured
+                    val element = Element.Image(url, if (alt.isBlank()) null else alt, title)
                     parents.add(element)
                     lastStartIndex = endIndex
                 }

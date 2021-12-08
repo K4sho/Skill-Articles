@@ -27,47 +27,51 @@ class SearchBgHelper(
     mockDrawableMiddle: Drawable?,
     mockDrawableRight: Drawable?
 ) {
-
     constructor(
         context: Context,
-        focusListener: (top: Int, bottom: Int) -> Unit
+        focusListener: ((top: Int, bottom: Int) -> Unit)
     ) : this(
         context,
         focusListener,
-        null,
-        null,
-        null,
-        null
+        mockDrawable = null,
+        mockDrawableLeft = null,
+        mockDrawableMiddle = null,
+        mockDrawableRight = null
     )
 
     private val padding: Int = context.dpToIntPx(4)
-    private val borderWidth: Int = context.dpToIntPx(1)
     private val radius: Float = context.dpToPx(8)
+    private val borderWidth: Int = context.dpToIntPx(1)
 
-    private val secondaryColor: Int = context.attrValue(R.attr.colorSecondary)
+    private val secondaryColor: Int = context.attrValue(R.attr.colorSecondary, true)
     private val alphaColor: Int = ColorUtils.setAlphaComponent(secondaryColor, 160)
-
-    private val drawable: Drawable = mockDrawable ?: GradientDrawable().apply {
+    val drawable: Drawable = mockDrawable ?: GradientDrawable().apply {
         shape = GradientDrawable.RECTANGLE
-        cornerRadii = FloatArray(8).apply { fill(radius, 0, size) }
-        color = ColorStateList.valueOf(alphaColor)
-        setStroke(borderWidth, secondaryColor)
+        cornerRadii = FloatArray(8).apply {
+            fill(radius, 0, size)
+            color = ColorStateList.valueOf(alphaColor)
+            setStroke(borderWidth, secondaryColor)
+        }
     }
 
     private val drawableLeft: Drawable = mockDrawableLeft ?: GradientDrawable().apply {
         shape = GradientDrawable.RECTANGLE
         cornerRadii = floatArrayOf(
-            radius, radius, // top left
-            0f, 0f, // top right
-            0f, 0f, // bottom right
-            radius, radius // bottom left
+            radius, radius,
+            0f, 0f,
+            0f, 0f,
+            radius, radius
         )
         color = ColorStateList.valueOf(alphaColor)
         setStroke(borderWidth, secondaryColor)
     }
 
+
     private val drawableMiddle: Drawable = mockDrawableMiddle ?: GradientDrawable().apply {
         shape = GradientDrawable.RECTANGLE
+        cornerRadii = FloatArray(8).apply {
+            fill(0f, 0, size)
+        }
         color = ColorStateList.valueOf(alphaColor)
         setStroke(borderWidth, secondaryColor)
     }
@@ -85,13 +89,19 @@ class SearchBgHelper(
     }
 
     private lateinit var render: SearchBgRender
-    private val singleLineRender: SearchBgRender = SingleLineRender(padding, drawable)
+    private val singleLineRender: SearchBgRender =
+        SingleLineRender(padding, drawable)
+
     private val multiLineRender: SearchBgRender =
-        MultiLineRender(padding, drawableLeft, drawableMiddle, drawableRight)
+        MultiLineRender(
+            padding,
+            drawableLeft,
+            drawableMiddle,
+            drawableRight
+        )
 
     private lateinit var spans: Array<out SearchSpan>
     private lateinit var headerSpans: Array<out HeaderSpan>
-
     private var spanStart = 0
     private var spanEnd = 0
     private var startLine = 0
@@ -101,33 +111,29 @@ class SearchBgHelper(
     private var topExtraPadding = 0
     private var bottomExtraPadding = 0
 
-    fun draw(canvas: Canvas, text: Spanned, layout: Layout) {
-        spans = text.getSpans()
+    fun draw(canvas: Canvas, spannedText: Spanned, layout: Layout) {
+        spans = spannedText.getSpans()
         spans.forEach {
-            spanStart = text.getSpanStart(it)
-            spanEnd = text.getSpanEnd(it)
+            spanStart = spannedText.getSpanStart(it)
+            spanEnd = spannedText.getSpanEnd(it)
             startLine = layout.getLineForOffset(spanStart)
             endLine = layout.getLineForOffset(spanEnd)
 
-            headerSpans = text.getSpans(spanStart, spanEnd, HeaderSpan::class.java)
-
+            headerSpans = spannedText.getSpans(spanStart, spanEnd, HeaderSpan::class.java)
             topExtraPadding = 0
             bottomExtraPadding = 0
 
-            // if search
             if (it is SearchFocusSpan) {
-                // if search focus invoke for focus
                 focusListener(layout.getLineTop(startLine), layout.getLineBottom(endLine))
             }
-
-            // handle extra padding or header
             if (headerSpans.isNotEmpty()) {
                 headerSpans[0].run {
                     this@SearchBgHelper.topExtraPadding =
-                        if (spanStart in firstLineBounds || spanEnd in firstLineBounds) topExtraPadding else 0
-
+                        if (spanStart in firstLineBounds || spanEnd in firstLineBounds) this.topExtraPadding
+                        else 0
                     this@SearchBgHelper.bottomExtraPadding =
-                        if (spanStart in lastLineBounds || spanEnd in lastLineBounds) bottomExtraPadding else 0
+                        if (spanStart in lastLineBounds || spanEnd in lastLineBounds) this.bottomExtraPadding
+                        else 0
                 }
             }
 
@@ -144,12 +150,16 @@ class SearchBgHelper(
                 endOffset,
                 topExtraPadding,
                 bottomExtraPadding
+
             )
         }
     }
 }
 
-abstract class SearchBgRender(val padding: Int) {
+abstract class SearchBgRender(
+    val padding: Int,
+
+    ) {
     abstract fun draw(
         canvas: Canvas,
         layout: Layout,
@@ -184,7 +194,7 @@ class SingleLineRender(padding: Int, val drawable: Drawable) : SearchBgRender(pa
         topExtraPadding: Int,
         bottomExtraPadding: Int
     ) {
-        lineTop = getLineBottom(layout, startLine) + topExtraPadding
+        lineTop = getLineTop(layout, startLine) + topExtraPadding
         lineBottom = getLineBottom(layout, startLine) - bottomExtraPadding
         drawable.setBounds(startOffset - padding, lineTop, endOffset + padding, lineBottom)
         drawable.draw(canvas)
@@ -193,9 +203,9 @@ class SingleLineRender(padding: Int, val drawable: Drawable) : SearchBgRender(pa
 
 class MultiLineRender(
     padding: Int,
-    private val drawableLeft: Drawable,
-    private val drawableMiddle: Drawable,
-    private val drawableRight: Drawable
+    val drawableLeft: Drawable,
+    val drawableMiddle: Drawable,
+    val drawableRight: Drawable,
 ) : SearchBgRender(padding) {
     private var lineTop: Int = 0
     private var lineBottom: Int = 0
@@ -212,13 +222,11 @@ class MultiLineRender(
         topExtraPadding: Int,
         bottomExtraPadding: Int
     ) {
-        // draw first line
         lineEndOffset = (layout.getLineRight(startLine) + padding).toInt()
         lineTop = getLineTop(layout, startLine) + topExtraPadding
         lineBottom = getLineBottom(layout, startLine)
         drawStart(canvas, startOffset - padding, lineTop, lineEndOffset, lineBottom)
 
-        // draw middle line
         for (line in startLine.inc() until endLine) {
             lineTop = getLineTop(layout, line)
             lineBottom = getLineBottom(layout, line)
@@ -231,21 +239,31 @@ class MultiLineRender(
             drawableMiddle.draw(canvas)
         }
 
-        // draw last line
         lineStartOffset = (layout.getLineLeft(startLine) - padding).toInt()
         lineTop = getLineTop(layout, endLine)
         lineBottom = getLineBottom(layout, endLine) - bottomExtraPadding
         drawEnd(canvas, lineStartOffset, lineTop, endOffset + padding, lineBottom)
     }
 
-    private fun drawStart(canvas: Canvas, start: Int, top: Int, end: Int, bottom: Int) {
+    private fun drawStart(
+        canvas: Canvas,
+        start: Int,
+        top: Int,
+        end: Int,
+        bottom: Int
+    ) {
         drawableLeft.setBounds(start, top, end, bottom)
         drawableLeft.draw(canvas)
     }
 
-    private fun drawEnd(canvas: Canvas, start: Int, top: Int, end: Int, bottom: Int) {
+    private fun drawEnd(
+        canvas: Canvas,
+        start: Int,
+        top: Int,
+        end: Int,
+        bottom: Int
+    ) {
         drawableRight.setBounds(start, top, end, bottom)
         drawableRight.draw(canvas)
     }
-
 }

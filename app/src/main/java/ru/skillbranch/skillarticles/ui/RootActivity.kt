@@ -44,10 +44,10 @@ class RootActivity : AppCompatActivity(), IArticleView {
     private val vb: ActivityRootBinding by viewBinding(ActivityRootBinding::inflate)
 
     private val vbBottombar
-        get() = vb.bottombar.binding
+        get() = vb.bottombar
 
     private val vbSubmenu
-        get() = vb.submenu.binding
+        get() = vb.submenu
 
     private lateinit var searchView: SearchView
 
@@ -257,10 +257,6 @@ class RootActivity : AppCompatActivity(), IArticleView {
             }
         })
 
-        /**searchView.setOnSearchClickListener {
-        viewModel.handleSearchMode(true)
-        }*/
-
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 searchView.clearFocus()
@@ -269,8 +265,6 @@ class RootActivity : AppCompatActivity(), IArticleView {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                //А если пользователь сотрет поисковую строку,
-                // то на экране будет отобаржаться поиск последней стертой буквы?
                 if (!newText.isNullOrBlank()) {
                     viewModel.handleSearch(newText)
                 }
@@ -281,8 +275,8 @@ class RootActivity : AppCompatActivity(), IArticleView {
         return super.onCreateOptionsMenu(menu)
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
+    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
         viewModel.saveState()
-        super.onSaveInstanceState(outState)
+        super.onSaveInstanceState(outState, outPersistentState)
     }
 }

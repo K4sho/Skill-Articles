@@ -3,7 +3,10 @@ package ru.skillbranch.skillarticles.ui.custom.markdown
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
+import android.os.Parcel
+import android.os.Parcelable
 import android.text.Spannable
+import android.util.Log
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
@@ -16,7 +19,9 @@ import androidx.core.view.isVisible
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
+import com.bumptech.glide.request.target.Target
 import ru.skillbranch.skillarticles.R
+import ru.skillbranch.skillarticles.data.GlideApp
 import ru.skillbranch.skillarticles.extensions.attrValue
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 import ru.skillbranch.skillarticles.extensions.dpToPx
@@ -83,7 +88,7 @@ class MarkdownImageView private constructor(
 
     init {
         layoutParams =
-            LayoutParams(LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
+            LayoutParams(LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         ivImage = ImageView(context).apply {
             outlineProvider = object : ViewOutlineProvider() {
                 override fun getOutline(view: View, outline: Outline) {
@@ -118,9 +123,9 @@ class MarkdownImageView private constructor(
 
         tvTitle.setText(title, TextView.BufferType.SPANNABLE)
 
-        Glide
+        GlideApp
             .with(context)
-            .load(url)
+            .load(imageUrl)
             .transform(AspectRatioResizeTransform())
             .into(ivImage)
 
@@ -239,6 +244,63 @@ class MarkdownImageView private constructor(
             linePositionY,
             linePaint
         )
+    }
+
+    override fun onSaveInstanceState(): Parcelable? {
+        val savedState = SavedState(super.onSaveInstanceState())
+        if (ivImage.id == NO_ID) ivImage.id = View.generateViewId()
+        if (tvTitle.id == NO_ID) tvTitle.id = View.generateViewId()
+        if (tvAlt?.id == NO_ID) tvAlt?.id = View.generateViewId()
+        savedState.ssIsOpen = tvAlt?.isVisible ?: false
+        savedState.ssImageId = ivImage.id
+        savedState.ssTitleId = tvTitle.id
+        savedState.ssAltId = tvAlt?.id ?: 0
+        return savedState
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        super.onRestoreInstanceState(state)
+        if (state is SavedState) {
+            tvAlt?.isVisible = state.ssIsOpen
+            ivImage.id = state.ssImageId
+            tvTitle.id = state.ssTitleId
+            tvAlt?.id = state.ssAltId
+            Log.d(
+                "M_MarkdownImageView",
+                "Restored ImageId=${ivImage.id}, TitleId=${tvTitle.id}, AltId=${tvAlt?.id}"
+            )
+        }
+    }
+
+    private class SavedState : BaseSavedState, Parcelable {
+        var ssIsOpen: Boolean = false
+        var ssImageId = 0
+        var ssTitleId = 0
+        var ssAltId = 0
+
+        constructor(superState: Parcelable?) : super(superState)
+
+        constructor(src: Parcel) : super(src) {
+            ssIsOpen = src.readInt() == 1
+            ssImageId = src.readInt()
+            ssTitleId = src.readInt()
+            ssAltId = src.readInt()
+        }
+
+        override fun writeToParcel(dst: Parcel, flags: Int) {
+            super.writeToParcel(dst, flags)
+            dst.writeInt(if (ssIsOpen) 1 else 0)
+            dst.writeInt(ssImageId)
+            dst.writeInt(ssTitleId)
+            dst.writeInt(ssAltId)
+        }
+
+        override fun describeContents() = 0
+
+        companion object CREATOR : Parcelable.Creator<SavedState> {
+            override fun createFromParcel(parcel: Parcel) = SavedState(parcel)
+            override fun newArray(size: Int): Array<SavedState?> = arrayOfNulls(size)
+        }
     }
 }
 
