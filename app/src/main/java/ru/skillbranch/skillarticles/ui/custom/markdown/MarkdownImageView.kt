@@ -19,9 +19,7 @@ import androidx.core.view.isVisible
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
-import com.bumptech.glide.request.target.Target
 import ru.skillbranch.skillarticles.R
-import ru.skillbranch.skillarticles.data.GlideApp
 import ru.skillbranch.skillarticles.extensions.attrValue
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 import ru.skillbranch.skillarticles.extensions.dpToPx
@@ -123,7 +121,7 @@ class MarkdownImageView private constructor(
 
         tvTitle.setText(title, TextView.BufferType.SPANNABLE)
 
-        GlideApp
+        Glide
             .with(context)
             .load(imageUrl)
             .transform(AspectRatioResizeTransform())
