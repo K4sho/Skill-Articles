@@ -249,9 +249,6 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
             override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
                 viewModel.handleSearchMode(false)
-                //Скорее всего, при схлопывании строки поиска значок поиска перестает отображаться?
-                // Нужно добавить эту строку для того,
-                // чтобы не отрисовывался значок меню вместо поиска
                 invalidateOptionsMenu()
                 return true
             }
