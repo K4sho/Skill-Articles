@@ -5,18 +5,16 @@ import android.util.Log
 import androidx.core.os.bundleOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
-import ru.skillbranch.skillarticles.data.AppSettings
 import ru.skillbranch.skillarticles.data.ArticleData
 import ru.skillbranch.skillarticles.data.ArticlePersonalInfo
 import ru.skillbranch.skillarticles.data.repositories.ArticleRepository
+import ru.skillbranch.skillarticles.data.repositories.MarkdownElement
+import ru.skillbranch.skillarticles.data.repositories.clearContent
 import ru.skillbranch.skillarticles.extensions.asMap
 import ru.skillbranch.skillarticles.extensions.format
 import ru.skillbranch.skillarticles.extensions.toAppSettings
 import ru.skillbranch.skillarticles.extensions.toArticlePersonalInfo
 import ru.skillbranch.skillarticles.extensions.indexesOf
-import ru.skillbranch.skillarticles.ui.custom.markdown.MarkdownElement
-import ru.skillbranch.skillarticles.ui.custom.markdown.MarkdownParser
-import ru.skillbranch.skillarticles.ui.custom.markdown.clearContent
 import java.util.*
 
 class ArticleViewModel(private val articleId: String, savedStateHandle: SavedStateHandle) :
@@ -137,7 +135,8 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
     override fun handleSearch(query: String?) {
         query ?: return
 
-        if (clearContent == null && currentState.content.isNotEmpty()) clearContent = currentState.content.clearContent()
+        if (clearContent == null && currentState.content.isNotEmpty()) clearContent =
+            currentState.content.clearContent()
 
         val result = clearContent.indexesOf(query)
             .map { it to it + query.length }
