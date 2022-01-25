@@ -1,10 +1,15 @@
 package ru.skillbranch.skillarticles.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.PersistableBundle
 import android.text.Selection
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.method.LinkMovementMethod
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.Menu
@@ -24,8 +29,9 @@ import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.databinding.ActivityRootBinding
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 import ru.skillbranch.skillarticles.extensions.setMarginOptionally
-import ru.skillbranch.skillarticles.ui.custom.SearchFocusSpan
-import ru.skillbranch.skillarticles.ui.custom.SearchSpan
+import ru.skillbranch.skillarticles.ui.custom.markdown.MarkdownBuilder
+import ru.skillbranch.skillarticles.ui.custom.spans.SearchFocusSpan
+import ru.skillbranch.skillarticles.ui.custom.spans.SearchSpan
 import ru.skillbranch.skillarticles.ui.delegates.AttrValue
 import ru.skillbranch.skillarticles.ui.delegates.viewBinding
 import ru.skillbranch.skillarticles.viewmodels.*
@@ -38,54 +44,51 @@ class RootActivity : AppCompatActivity(), IArticleView {
     private val vb: ActivityRootBinding by viewBinding(ActivityRootBinding::inflate)
 
     private val vbBottombar
-        get() = vb.bottombar.binding
+        get() = vb.bottombar
 
     private val vbSubmenu
-        get() = vb.submenu.binding
+        get() = vb.submenu
 
     private lateinit var searchView: SearchView
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val bgColor by AttrValue(R.attr.colorSecondary)
-
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val fgColor by AttrValue(R.attr.colorOnSecondary)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setupToolbar()
         setupSubmenu()
         setupBottombar()
+        setupToolbar()
+        setupCopyListener()
 
         viewModel.observeState(this, ::renderUi)
         viewModel.observeSubState(this, ArticleState::toBottombarData, ::renderBotombar)
         viewModel.observeSubState(this, ArticleState::toSubmenuData, ::renderSubmenu)
-        //Здесь также можно передать ссылку на метод.
-        viewModel.observeNotifications(this, ::renderNotification)
+        viewModel.observeNotifications(this) {
+            renderNotification(it)
+        }
+    }
+
+    override fun setupCopyListener() {
+        vb.tvTextContent.setCopyListener { copy ->
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Copied code", copy)
+            clipboard.setPrimaryClip(clip)
+            viewModel.handleCopyCode()
+        }
     }
 
     override fun renderUi(state: ArticleState) {
         delegate.localNightMode =
             if (state.isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
 
-        //хардкод строки "loading" в большом количестве мест. Лучше вынести эту строку в ресурсы.
         with(vb.tvTextContent) {
             textSize = if (state.isBigText) 18f else 14f
-            movementMethod = ScrollingMovementMethod()
-            val content = if (state.isLoadingContent) "loading" else state.content.first()
-            if (text.toString() == content) return@with
-            setText(content, TextView.BufferType.SPANNABLE)
+            isLoading = state.content.isEmpty()
+            setContent(state.content)
         }
 
         // bind toolbar
         with(vb.toolbar) {
             title = state.title ?: "loading"
             subtitle = state.category ?: "loading"
-            //в данном случае не критично, так как minApi=23, но лучше использовать
-            // ContextCompat.getDrawable, так как он учитывает уровень апи и в зависимости от него
-            // правильно получает иконку.
-            // Можно даже завести для этого extension-метод Context.getDrawableFrom,
-            // внутри которого и вызывать ContextCompat.getDrawable
             if (state.categoryIcon != null)
                 logo = ContextCompat.getDrawable(this@RootActivity, state.categoryIcon as Int)
         }
@@ -94,7 +97,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
         if (state.isSearch) {
             renderSearchResult(state.searchResults)
-            renderSearchPosition(state.searchPosition)
+            renderSearchPosition(state.searchPosition, state.searchResults)
         } else clearSearchResult()
     }
 
@@ -107,9 +110,11 @@ class RootActivity : AppCompatActivity(), IArticleView {
             .setAnchorView(vb.bottombar)
         when (notify) {
             is Notify.ActionMessage -> {
+                val (_, label, handler) = notify
+
                 with(snackbar) {
                     setActionTextColor(getColor(R.color.color_accent_dark))
-                    setAction(notify.actionLabel) { notify.actionHandler.invoke() }
+                    setAction(label) { handler.invoke() }
                 }
             }
             is Notify.ErrorMessage -> {
@@ -155,50 +160,15 @@ class RootActivity : AppCompatActivity(), IArticleView {
     }
 
     override fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
-        val content = vb.tvTextContent.text as Spannable
-
-        clearSearchResult()
-
-        searchResult.forEach { (start, end) ->
-
-            content.setSpan(
-                SearchSpan(bgColor, fgColor),
-                start,
-                end,
-                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-
-        //возможно при поиске стоит скроллить до первого вхождения?
-        renderSearchPosition(0)
+        vb.tvTextContent.renderSearchResult(searchResult)
     }
 
-    override fun renderSearchPosition(searchPosition: Int) {
-        val content = vb.tvTextContent.text as Spannable
-        val spans = content.getSpans<SearchSpan>()
-
-        // remove old search focus span
-        content.getSpans<SearchFocusSpan>()
-            .forEach { content.removeSpan(it) }
-
-        if (spans.isNotEmpty()) {
-            // find position span
-            val result = spans[searchPosition]
-            // move to selection
-            Selection.setSelection(content, content.getSpanStart(result))
-            // set new search focus span
-            content.setSpan(
-                SearchFocusSpan(bgColor, fgColor),
-                content.getSpanStart(result),
-                content.getSpanEnd(result),
-                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
+    override fun renderSearchPosition(searchPosition: Int, searchResult: List<Pair<Int, Int>>) {
+        vb.tvTextContent.renderSearchPosition(searchResult.getOrNull(searchPosition))
     }
 
     override fun clearSearchResult() {
-        val content = vb.tvTextContent.text as Spannable
-        content.getSpans<SearchSpan>().forEach { content.removeSpan(it) }
+        vb.tvTextContent.clearSearchResult()
     }
 
     override fun showSearchBar(resultsCount: Int, searchPosition: Int) {
@@ -263,12 +233,6 @@ class RootActivity : AppCompatActivity(), IArticleView {
         searchView = (menuItem.actionView as SearchView)
         searchView.queryHint = getString(R.string.article_search_placeholder)
         // restore SearchView
-        //Не очень хорошо, когда из View-слоя идет доступ к состоянию вью-модели напрямую,
-        // но думаю в будущем в курсе это будет исправлено.
-        // Просто на заметку: в своих проектах так не делай :)
-        // Лучше сделать класс состояния вью, который будет отвечать за отрисовку состояния
-        // вью-модели и хранить в себе это отрисованное состояние. И брать данные оттуда.
-        // Таким образом можно добиться низкой связанности вью-слоя со слоем вью-модели.
         if (viewModel.currentState.isSearch) {
             menuItem.expandActionView()
             searchView.setQuery(viewModel.currentState.searchQuery, false)
@@ -285,17 +249,10 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
             override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
                 viewModel.handleSearchMode(false)
-                //Скорее всего, при схлопывании строки поиска значок поиска перестает отображаться?
-                // Нужно добавить эту строку для того,
-                // чтобы не отрисовывался значок меню вместо поиска
                 invalidateOptionsMenu()
                 return true
             }
         })
-
-        /**searchView.setOnSearchClickListener {
-        viewModel.handleSearchMode(true)
-        }*/
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -305,8 +262,6 @@ class RootActivity : AppCompatActivity(), IArticleView {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                //А если пользователь сотрет поисковую строку,
-                // то на экране будет отобаржаться поиск последней стертой буквы?
                 if (!newText.isNullOrBlank()) {
                     viewModel.handleSearch(newText)
                 }
@@ -317,8 +272,8 @@ class RootActivity : AppCompatActivity(), IArticleView {
         return super.onCreateOptionsMenu(menu)
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
+    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
         viewModel.saveState()
-        super.onSaveInstanceState(outState)
+        super.onSaveInstanceState(outState, outPersistentState)
     }
 }

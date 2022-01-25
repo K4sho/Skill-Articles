@@ -5,22 +5,23 @@ import android.util.Log
 import androidx.core.os.bundleOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
-import ru.skillbranch.skillarticles.data.AppSettings
 import ru.skillbranch.skillarticles.data.ArticleData
 import ru.skillbranch.skillarticles.data.ArticlePersonalInfo
 import ru.skillbranch.skillarticles.data.repositories.ArticleRepository
+import ru.skillbranch.skillarticles.data.repositories.MarkdownElement
+import ru.skillbranch.skillarticles.data.repositories.clearContent
 import ru.skillbranch.skillarticles.extensions.asMap
 import ru.skillbranch.skillarticles.extensions.format
 import ru.skillbranch.skillarticles.extensions.toAppSettings
 import ru.skillbranch.skillarticles.extensions.toArticlePersonalInfo
 import ru.skillbranch.skillarticles.extensions.indexesOf
-import ru.skillbranch.skillarticles.markdown.MarkdownParser
 import java.util.*
 
 class ArticleViewModel(private val articleId: String, savedStateHandle: SavedStateHandle) :
     BaseViewModel<ArticleState>(ArticleState(), savedStateHandle), IArticleViewModel {
 
     private val repository = ArticleRepository
+    private var clearContent: String? = null
 
     // В блоке инициализации подписываем на изменения
     init {
@@ -63,7 +64,7 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
         }
     }
 
-    override fun getArticleContent(): LiveData<List<String>?> {
+    override fun getArticleContent(): LiveData<List<MarkdownElement>?> {
         return repository.loadArticleContent(articleId)
     }
 
@@ -134,9 +135,10 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
     override fun handleSearch(query: String?) {
         query ?: return
 
-        //в будущем (а может уже сейчас) при поиске нужно будет очищать текст от markdown-тегов.
-        val result = MarkdownParser.clear(currentState.content.firstOrNull() ?: "")
-            .indexesOf(query)
+        if (clearContent == null && currentState.content.isNotEmpty()) clearContent =
+            currentState.content.clearContent()
+
+        val result = clearContent.indexesOf(query)
             .map { it to it + query.length }
 
         updateState { it.copy(searchQuery = query, searchResults = result) }
@@ -152,6 +154,10 @@ class ArticleViewModel(private val articleId: String, savedStateHandle: SavedSta
         updateState {
             it.copy(searchPosition = it.searchPosition.inc())
         }
+    }
+
+    override fun handleCopyCode() {
+        notify(Notify.TextMessage("Code copy to clipboard"))
     }
 }
 
@@ -178,8 +184,8 @@ data class ArticleState(
     val date: String? = null, // дата публикации
     val author: Any? = null, // автор
     val poster: String? = null,
-    val content: List<String> = emptyList(),
-    val reviews: List<Any> = emptyList()
+    val content: List<MarkdownElement> = emptyList(),
+    val reviews: List<Any> = emptyList() // комментарии
 ) : VMState {
     override fun toBundle(): Bundle {
         val map = copy(content = emptyList(), isLoadingContent = true)
@@ -212,7 +218,7 @@ data class ArticleState(
             date = map["date"] as String?,
             author = map["author"] as Any?,
             poster = map["poster"] as String?,
-            content = map["content"] as List<String>,
+            content = map["content"] as List<MarkdownElement>,
             reviews = map["reviews"] as List<Any>,
         )
     }

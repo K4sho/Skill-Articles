@@ -1,131 +1,234 @@
 package ru.skillbranch.skillarticles.ui.custom
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
 import android.util.AttributeSet
-import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewAnimationUtils
+import android.view.ViewGroup
 import android.widget.TextView
-import androidx.appcompat.widget.Toolbar
-import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.annotation.ColorInt
+import androidx.annotation.Px
+import androidx.annotation.VisibleForTesting
+import androidx.appcompat.widget.AppCompatImageView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.animation.doOnEnd
 import androidx.core.view.isVisible
+import androidx.core.view.setPadding
 import com.google.android.material.shape.MaterialShapeDrawable
 import ru.skillbranch.skillarticles.R
-import ru.skillbranch.skillarticles.databinding.LayoutBottombarBinding
+import ru.skillbranch.skillarticles.extensions.*
 import ru.skillbranch.skillarticles.ui.custom.behaviors.BottombarBehavior
 import kotlin.math.hypot
+
 
 class Bottombar @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : ConstraintLayout(context, attrs, defStyleAttr), CoordinatorLayout.AttachedBehavior {
+) : ViewGroup(context, attrs, defStyleAttr), CoordinatorLayout.AttachedBehavior {
+
+    //sizes
+    @Px
+    private val iconSize = context.dpToIntPx(56)
+
+    @Px
+    private val iconPadding = context.dpToIntPx(16)
+    private val iconTint = context.getColorStateList(R.color.tint_color)
+    val minHeight: Int = iconSize
+
+    //views
+    val btnLike: CheckableImageView
+    val btnBookmark: CheckableImageView
+    val btnShare: AppCompatImageView
+    val btnSettings: CheckableImageView
+
+    private val searchBar: SearchBar
+    val tvSearchResult
+        get() = searchBar.tvSearchResult
+    val btnResultUp
+        get() = searchBar.btnResultUp
+    val btnResultDown
+        get() = searchBar.btnResultDown
+    val btnSearchClose
+        get() = searchBar.btnSearchClose
 
     var isSearchMode = false
-
-    //Можно совместить объявление с инициализацией
-    val binding: LayoutBottombarBinding =
-        LayoutBottombarBinding.inflate(LayoutInflater.from(context), this)
+    override fun getBehavior(): CoordinatorLayout.Behavior<Bottombar> {
+        return BottombarBehavior()
+    }
 
     init {
         val materialBg = MaterialShapeDrawable.createWithElevationOverlay(context)
         materialBg.elevation = elevation
         background = materialBg
-    }
+        btnLike = CheckableImageView(context).apply {
+            setImageResource(R.drawable.like_states)
+            imageTintList = iconTint
+            setBackgroundResource(R.drawable.ripple)
+            setPadding(iconPadding)
 
-    fun setSearchState(isSearch: Boolean) {
-        if (isSearchMode == isSearch || !isAttachedToWindow) return
-        isSearchMode = isSearch
-        if (isSearchMode) animatedShowSearch()
-        else animateHideSearch()
-    }
-
-    fun setSearchInfo(searchCount: Int = 0, position: Int = 0) {
-        with(binding) {
-            btnResultDown.isEnabled = searchCount > 0
-            btnResultUp.isEnabled = searchCount > 0
-
-            //Хардкод строк обычно не приветствуется, особенно там где есть доступ к контексту.
-            // Лучше положить эти строки в ресурсы и получать их при создании вьюхи,
-            // сохраняя в приватное свойство.
-            tvSearchResult.text = if (searchCount == 0) "Not found" else "${position.inc()} of $searchCount"
-
-            //если в статье слово встретится один раз, то стрелка вниз не отключится,
-            // так как сработает первое условие в when и остальные проверки будут пропущены.
-            when(position){
-                0 -> btnResultUp.isEnabled = false
-                searchCount.dec() -> btnResultDown.isEnabled = false
-            }
         }
-    }
-
-    private fun animateHideSearch() {
-        binding.bottomGroup.isVisible = true
-        val endRadius = hypot(width.toDouble(), height / 2.toDouble())
-        val va = ViewAnimationUtils.createCircularReveal(
-            binding.reveal,
-            width,
-            height / 2,
-            0f,
-            endRadius.toFloat()
-        )
-        va.doOnEnd {
-            binding.reveal.isVisible = false
+        addView(btnLike)
+        btnBookmark = CheckableImageView(context).apply {
+            setImageResource(R.drawable.bookmark_states)
+            imageTintList = iconTint
+            setBackgroundResource(R.drawable.ripple)
+            setPadding(iconPadding)
         }
-        va.start()
-    }
-
-    private fun animatedShowSearch() {
-        binding.reveal.isVisible = true
-        val endRadius = hypot(width.toDouble(), height / 2.toDouble())
-        val va = ViewAnimationUtils.createCircularReveal(
-            binding.reveal,
-            width,
-            height / 2,
-            0f,
-            endRadius.toFloat()
-        )
-        va.doOnEnd {
-            binding.bottomGroup.isVisible = false
+        addView(btnBookmark)
+        btnShare = AppCompatImageView(context).apply {
+            setImageResource(R.drawable.ic_share_black_24dp)
+            isFocusable = true
+            isClickable = true
+            imageTintList = iconTint
+            setBackgroundResource(R.drawable.ripple)
+            setPadding(iconPadding)
         }
-        va.start()
-    }
+        addView(btnShare)
+        btnSettings = CheckableImageView(context).apply {
+            setImageResource(R.drawable.ic_format_size_black_24dp)
+            imageTintList = iconTint
+            setBackgroundResource(R.drawable.ripple)
+            setPadding(iconPadding)
+        }
+        addView(btnSettings)
+        searchBar = SearchBar().apply {
+            isVisible = false
 
-    override fun getBehavior(): CoordinatorLayout.Behavior<*> {
-        return BottombarBehavior()
+        }
+        addView(searchBar)
     }
 
     override fun onSaveInstanceState(): Parcelable {
         val saveState = SavedState(super.onSaveInstanceState())
-        saveState.ssSearchMode = isSearchMode
+        saveState.ssIsSearchMode = isSearchMode
         return saveState
     }
 
     override fun onRestoreInstanceState(state: Parcelable?) {
         super.onRestoreInstanceState(state)
         if (state is SavedState) {
-            isSearchMode = state.ssSearchMode
-            binding.reveal.isVisible = isSearchMode
-            binding.bottomGroup.isVisible = !isSearchMode
+            isSearchMode = state.ssIsSearchMode
+            searchBar.isVisible = isSearchMode
         }
     }
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
+    public override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val usedWidth = getDefaultSize(suggestedMinimumWidth, widthMeasureSpec)
+        measureChild(searchBar, widthMeasureSpec, heightMeasureSpec)
+        setMeasuredDimension(usedWidth, iconSize)
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
+    public override fun onLayout(p0: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        var usedWidth = paddingLeft
+        btnLike.layout(
+            l + usedWidth,
+            paddingTop,
+            l + usedWidth + iconSize,
+            iconSize - paddingBottom
+        )
+        usedWidth += iconSize
+        btnBookmark.layout(
+            l + usedWidth,
+            paddingTop,
+            l + usedWidth + iconSize,
+            iconSize - paddingBottom
+        )
+        usedWidth += iconSize
+        btnShare.layout(
+            l + usedWidth,
+            paddingTop,
+            l + usedWidth + iconSize,
+            iconSize - paddingBottom
+        )
+        btnSettings.layout(
+            r - iconSize,
+            paddingTop,
+            r,
+            iconSize - paddingBottom
+        )
+        searchBar.layout(
+            l,
+            paddingTop,
+            r,
+            iconSize - paddingBottom
+        )
+
+    }
+
+    fun setSearchState(isSearch: Boolean) {
+        if (isSearch == isSearchMode || !isAttachedToWindow) return
+        isSearchMode = isSearch
+        if (isSearchMode) animatedShowSearch()
+        else animateHideSearch()
+    }
+
+    fun setSearchInfo(searchCount: Int = 0, position: Int = 0) {
+        btnResultUp.isEnabled = searchCount > 0
+        btnResultDown.isEnabled = searchCount > 0
+        tvSearchResult.text =
+            if (searchCount == 0) resources.getString(R.string.not_found_text) else "${position.inc()} of $searchCount"
+        when (position) {
+            0 -> btnResultUp.isEnabled = false
+            searchCount.dec() -> btnResultDown.isEnabled = false
+        }
+    }
+
+    private fun animatedShowSearch() {
+        searchBar.isVisible = true
+        val endRadius = hypot(width.toDouble(), height / 2.toDouble())
+        val va = ViewAnimationUtils.createCircularReveal(
+            searchBar,
+            width,
+            height / 2,
+            0f,
+            endRadius.toFloat()
+        )
+        va.doOnEnd {
+            btnLike.isVisible = false
+            btnBookmark.isVisible = false
+            btnShare.isVisible = false
+            btnSettings.isVisible = false
+        }
+        va.start()
+    }
+
+    private fun animateHideSearch() {
+        btnLike.isVisible = true
+        btnBookmark.isVisible = true
+        btnShare.isVisible = true
+        btnSettings.isVisible = true
+        val endRadius = hypot(width.toDouble(), height / 2.toDouble())
+        val va = ViewAnimationUtils.createCircularReveal(
+            searchBar,
+            width,
+            height / 2,
+            endRadius.toFloat(),
+            0f
+        )
+        va.doOnEnd {
+            searchBar.isVisible = false
+
+        }
+        va.start()
+    }
+
     private class SavedState : BaseSavedState, Parcelable {
-        var ssSearchMode: Boolean = false
+        var ssIsSearchMode: Boolean = false
 
         constructor(superState: Parcelable?) : super(superState)
 
         constructor(parcel: Parcel) : super(parcel) {
-            ssSearchMode = parcel.readByte() != 0.toByte()
+            ssIsSearchMode = parcel.readByte() != 0.toByte()
         }
 
         override fun writeToParcel(parcel: Parcel, flags: Int) {
             super.writeToParcel(parcel, flags)
-            parcel.writeByte(if (ssSearchMode) 1 else 0)
+            parcel.writeByte(if (ssIsSearchMode) 1 else 0)
         }
 
         override fun describeContents(): Int {
@@ -133,10 +236,91 @@ class Bottombar @JvmOverloads constructor(
         }
 
         companion object CREATOR : Parcelable.Creator<SavedState> {
-            override fun createFromParcel(p0: Parcel): SavedState =
-                SavedState(p0)
-
+            override fun createFromParcel(parcel: Parcel) = SavedState(parcel)
             override fun newArray(size: Int): Array<SavedState?> = arrayOfNulls(size)
+        }
+
+    }
+
+    @SuppressLint("ViewConstructor")
+    inner class SearchBar : ViewGroup(context, null, 0) {
+        internal val btnSearchClose: AppCompatImageView
+        internal val tvSearchResult: TextView
+        internal val btnResultDown: AppCompatImageView
+        internal val btnResultUp: AppCompatImageView
+
+        @ColorInt
+        private val iconColor = context.attrValue(R.attr.colorPrimary, true)
+        private val iconTintSearch = context.getColorStateList(R.color.tint_search_color)
+        private val textMargin = context.dpToIntPx(16)
+
+        init {
+            setBackgroundColor(resources.getColor(R.color.color_on_article_bar, context.theme))
+            btnSearchClose = AppCompatImageView(context).apply {
+                setImageResource(R.drawable.ic_close_black_24dp)
+                setPadding(iconPadding)
+                imageTintList = iconTintSearch
+                setBackgroundResource(R.drawable.ripple)
+
+            }
+            addView(btnSearchClose)
+            tvSearchResult = TextView(context).apply {
+                text = resources.getString(R.string.not_found_text)
+                textSize = 14f
+                setTextColor(context.attrValue(R.attr.colorPrimary, true))
+                setPaddingOptionally(left = context.dpToIntPx(16))
+            }
+            addView(tvSearchResult)
+            btnResultDown = AppCompatImageView(context).apply {
+                setImageResource(R.drawable.ic_keyboard_arrow_down_black_24dp)
+                setPadding(iconPadding)
+                imageTintList = iconTintSearch
+                setBackgroundResource(R.drawable.ripple)
+            }
+            addView(btnResultDown)
+            btnResultUp = AppCompatImageView(context).apply {
+                setImageResource(R.drawable.ic_keyboard_arrow_up_black_24dp)
+                setPadding(iconPadding)
+                imageTintList = iconTintSearch
+                setBackgroundResource(R.drawable.ripple)
+
+            }
+            addView(btnResultUp)
+        }
+
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+
+            tvSearchResult.measure(widthMeasureSpec, heightMeasureSpec)
+            setMeasuredDimension(widthMeasureSpec, heightMeasureSpec)
+        }
+
+        override fun onLayout(p0: Boolean, l: Int, t: Int, r: Int, b: Int) {
+            var usedWidth = paddingLeft
+            btnSearchClose.layout(
+                l + usedWidth,
+                paddingTop,
+                l + usedWidth + iconSize,
+                b - paddingBottom
+            )
+            usedWidth += iconSize
+            tvSearchResult.layout(
+                l + usedWidth,
+                (iconSize - tvSearchResult.measuredHeight) / 2,
+                l + usedWidth + tvSearchResult.measuredWidth,
+                (iconSize + tvSearchResult.measuredHeight) / 2
+            )
+            btnResultDown.layout(
+                r - 2 * iconSize,
+                paddingTop,
+                r - iconSize,
+                iconSize - paddingBottom
+            )
+            btnResultUp.layout(
+                r - iconSize,
+                paddingTop,
+                r,
+                iconSize - paddingBottom
+            )
         }
     }
 }

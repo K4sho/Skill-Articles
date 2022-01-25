@@ -6,6 +6,7 @@ import androidx.core.view.marginBottom
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
+import android.text.Layout
 
 /**
  * Добавляет внешний оступ к View
@@ -21,4 +22,13 @@ fun View.setMarginOptionally(
         it.setMargins(left, top, right, bottom)
         this.layoutParams = it
     }
+}
+
+fun View.setPaddingOptionally(
+    left: Int = paddingLeft,
+    right: Int = paddingRight,
+    top: Int = paddingTop,
+    bottom: Int = paddingBottom
+) {
+    setPadding(left, top, right, bottom)
 }
