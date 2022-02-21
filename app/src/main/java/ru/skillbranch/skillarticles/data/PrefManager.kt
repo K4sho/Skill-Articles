@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.asLiveData
@@ -41,6 +42,7 @@ class PrefManager(context: Context = App.applicationContext()) {
 
     var isBigText by PrefDelegate(false)
     var isDarkMode by PrefDelegate(false)
+    var accessToken by PrefDelegate("")
 
     val settings: LiveData<AppSettings>
         get() {
@@ -54,4 +56,9 @@ class PrefManager(context: Context = App.applicationContext()) {
                 .distinctUntilChanged()
                 .asLiveData()
         }
+
+    val isAuth: LiveData<Boolean>
+        get() = dataStore.data.map {
+            it[stringPreferencesKey(this::accessToken.name)]?.isNotEmpty() ?: false
+        }.distinctUntilChanged().asLiveData()
 }

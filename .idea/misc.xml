@@ -3,10 +3,15 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="..\:/AndroidStudioProjects/Skillbranch_middle/app/src/main/res/drawable/ic_content_copy_black_24dp.xml" value="0.3078125" />
-        <entry key="..\:/AndroidStudioProjects/Skillbranch_middle/app/src/main/res/drawable/ic_link_black_24dp.xml" value="0.3078125" />
-        <entry key="..\:/AndroidStudioProjects/Skillbranch_middle/app/src/main/res/layout/activity_root.xml" value="0.1539855072463768" />
-        <entry key="..\:/AndroidStudioProjects/Skillbranch_middle/app/src/main/res/layout/layout_bottombar.xml" value="0.15353260869565216" />
+        <entry key="..\:/kotlin_sandbox/Skill-Articles/app/src/main/res/drawable/bookmark_states.xml" value="0.1625" />
+        <entry key="..\:/kotlin_sandbox/Skill-Articles/app/src/main/res/drawable/ic_bookmark_black_24dp.xml" value="0.1625" />
+        <entry key="..\:/kotlin_sandbox/Skill-Articles/app/src/main/res/layout/activity_root.xml" value="0.2734375" />
+        <entry key="..\:/kotlin_sandbox/Skill-Articles/app/src/main/res/layout/fragment_article.xml" value="0.3432971014492754" />
+        <entry key="..\:/kotlin_sandbox/Skill-Articles/app/src/main/res/layout/fragment_articles.xml" value="0.3432971014492754" />
+        <entry key="..\:/kotlin_sandbox/Skill-Articles/app/src/main/res/layout/item_article.xml" value="0.3432971014492754" />
+        <entry key="..\:/kotlin_sandbox/Skill-Articles/app/src/main/res/menu/bottom_nav_menu.xml" value="0.2734375" />
+        <entry key="..\:/kotlin_sandbox/Skill-Articles/app/src/main/res/menu/menu_search.xml" value="0.25885416666666666" />
+        <entry key="..\:/kotlin_sandbox/Skill-Articles/app/src/main/res/xml/searchable.xml" value="0.18854166666666666" />
       </map>
     </option>
   </component>

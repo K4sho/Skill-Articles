@@ -25,10 +25,10 @@ object ArticleRepository {
         return local.findArticlePersonalInfo(articleId) //1s delay from db
     }
 
-    fun getAppSettings(): LiveData<AppSettings> = local.getAppSettings() //from preferences
+    fun getAppSettings(): LiveData<AppSettings> = local.settings //from preferences
 
     fun updateSettings(appSettings: AppSettings) {
-        local.updateAppSettings(appSettings)
+        local.settings.postValue(appSettings)
     }
 
     fun updateArticlePersonalInfo(info: ArticlePersonalInfo) {

@@ -7,58 +7,46 @@ import android.os.Parcel
 import android.os.Parcelable
 import android.util.AttributeSet
 import android.util.Log
-import android.view.LayoutInflater
+import android.view.Gravity
 import android.view.View
 import android.view.ViewAnimationUtils
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.annotation.ColorInt
-import androidx.annotation.DrawableRes
-import androidx.annotation.Px
-import androidx.annotation.VisibleForTesting
-import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.annotation.*
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import com.google.android.material.shape.MaterialShapeDrawable
 import com.google.android.material.switchmaterial.SwitchMaterial
 import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.extensions.attrValue
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
-import ru.skillbranch.skillarticles.extensions.setPaddingOptionally
+import ru.skillbranch.skillarticles.extensions.dpToPx
 import ru.skillbranch.skillarticles.ui.custom.behaviors.SubmenuBehavior
 import kotlin.math.hypot
-import kotlin.math.roundToInt
 
-class ArticleSubmenu @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
-) : ViewGroup(context, attrs, defStyleAttr), CoordinatorLayout.AttachedBehavior {
+class ArticleSubmenu(baseContext: Context) :
+    ViewGroup(ContextThemeWrapper(baseContext, R.style.ArticleBarsTheme), null, 0),
+    CoordinatorLayout.AttachedBehavior {
     //settings
     @Px
     private val menuWidth = context.dpToIntPx(200)
-
     @Px
     private val menuHeight = context.dpToIntPx(96)
-
     @Px
     private val btnHeight = context.dpToIntPx(40)
-
     @Px
-    private val btnWidth = context.dpToIntPx(100)
-
+    private val btnWidth = menuWidth / 2
     @Px
     private val defaultPadding = context.dpToIntPx(16)
-
     @ColorInt
     private var lineColor: Int = context.getColor(R.color.color_divider)
-
     @ColorInt
-    private val textColor = context.attrValue(R.attr.colorOnSurface, true)
+    private val textColor = context.attrValue(R.attr.colorOnSurface)
     private val iconTint = context.getColorStateList(R.color.tint_color)
-
     @DrawableRes
     private val bg = context.attrValue(R.attr.selectableItemBackground, needRes = true)
 
@@ -76,32 +64,51 @@ class ArticleSubmenu @JvmOverloads constructor(
     }
 
     init {
+
+        id = R.id.submenu
+        val marg = dpToIntPx(8)
+        val elev = dpToPx(8)
+        layoutParams =
+            CoordinatorLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+                .apply {
+                    gravity = Gravity.BOTTOM or Gravity.RIGHT
+                    dodgeInsetEdges = Gravity.BOTTOM
+                    setMargins(0, 0, marg, marg)
+                }
+
+        //add material bg for handle elevation and color surface
         val materialBg = MaterialShapeDrawable.createWithElevationOverlay(context)
         materialBg.elevation = elevation
         background = materialBg
-        val topBottomPaddingDown = context.dpToIntPx(12)
-        val topBottomPaddingUp = context.dpToIntPx(8)
+        materialBg.elevation = elev
+        elevation = elev
+        isVisible = false
+
         btnTextDown = CheckableImageView(context).apply {
-            setImageResource(R.drawable.ic_title_black_24dp)
-            setBackgroundColor(bg)
+            setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_title_black_24dp)!!)
+            val pad = context.dpToIntPx(12)
+            setPadding(pad, pad, pad, pad)
             imageTintList = iconTint
-            setPaddingOptionally(top = topBottomPaddingDown, bottom = topBottomPaddingDown)
+            setBackgroundResource(bg)
         }
         addView(btnTextDown)
+
         btnTextUp = CheckableImageView(context).apply {
-            setPaddingOptionally(top = topBottomPaddingUp, bottom = topBottomPaddingUp)
-            setImageResource(R.drawable.ic_title_black_24dp)
-            setBackgroundColor(bg)
+            setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_title_black_24dp)!!)
+            val pad = defaultPadding / 2
+            setPadding(pad, pad, pad, pad)
             imageTintList = iconTint
+            setBackgroundResource(bg)
         }
         addView(btnTextUp)
-        switchMode = SwitchMaterial(context).apply {
 
-        }
+        switchMode = SwitchMaterial(context)
         addView(switchMode)
+
         tvLabel = TextView(context).apply {
-            text = resources.getString(R.string.dark_mode_label)
-            this.setTextColor(textColor)
+            text = "Темный режим"
+            textSize = 14f
+            setTextColor(textColor)
         }
         addView(tvLabel)
     }
@@ -123,7 +130,7 @@ class ArticleSubmenu @JvmOverloads constructor(
     }
 
     private fun animatedShow() {
-        val endRadius = hypot(menuWidth.toDouble(), menuHeight.toDouble()).toInt()
+        val endRadius = hypot(menuWidth.toFloat(), menuHeight.toFloat()).toInt()
         val anim = ViewAnimationUtils.createCircularReveal(
             this,
             menuWidth,
@@ -138,7 +145,7 @@ class ArticleSubmenu @JvmOverloads constructor(
     }
 
     private fun animatedHide() {
-        val endRadius = hypot(menuWidth.toDouble(), menuHeight.toDouble()).toInt()
+        val endRadius = hypot(menuWidth.toFloat(), menuHeight.toFloat()).toInt()
         val anim = ViewAnimationUtils.createCircularReveal(
             this,
             menuWidth,
@@ -153,7 +160,7 @@ class ArticleSubmenu @JvmOverloads constructor(
     }
 
     //save state
-    override fun onSaveInstanceState(): Parcelable {
+    override fun onSaveInstanceState(): Parcelable? {
         val savedState = SavedState(super.onSaveInstanceState())
         savedState.ssIsOpen = isOpen
         return savedState
@@ -170,41 +177,48 @@ class ArticleSubmenu @JvmOverloads constructor(
 
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     public override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val wms = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-        val hms = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-        tvLabel.measure(wms, hms)
-        switchMode.measure(wms, hms)
+        measureChild(switchMode, widthMeasureSpec, heightMeasureSpec)
+        measureChild(tvLabel, widthMeasureSpec, heightMeasureSpec)
         setMeasuredDimension(menuWidth, menuHeight)
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     public override fun onLayout(p0: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        val bodyWidth = r - l - paddingLeft - paddingRight
+        val left = paddingLeft
+        val right = paddingLeft + bodyWidth
         var usedHeight = paddingTop
+
         btnTextDown.layout(
-            paddingLeft,
+            left,
             usedHeight,
             btnWidth,
-            usedHeight + btnHeight
-        )
-        btnTextUp.layout(
-            btnWidth,
-            usedHeight,
-            menuWidth - paddingRight,
-            usedHeight + btnHeight
-        )
-        usedHeight += btnHeight
-        tvLabel.layout(
-            context.dpToIntPx(16) + paddingLeft,
-            ((menuHeight - paddingBottom + btnHeight - tvLabel.measuredHeight) / 2f).roundToInt(),
-            paddingLeft + context.dpToIntPx(16) + tvLabel.measuredWidth,
-            (menuHeight - paddingBottom + btnHeight) / 2 + tvLabel.measuredHeight / 2
+            btnHeight
         )
 
+        btnTextUp.layout(
+            right - btnWidth,
+            usedHeight,
+            right,
+            btnHeight
+        )
+
+        usedHeight += btnHeight
+        val deltaHLabel = (menuHeight - usedHeight - tvLabel.measuredHeight) / 2
+
+        tvLabel.layout(
+            left + defaultPadding,
+            usedHeight + deltaHLabel,
+            left + defaultPadding + tvLabel.measuredWidth,
+            usedHeight + deltaHLabel + tvLabel.measuredHeight
+        )
+
+        val deltaHSwitch = (menuHeight - usedHeight - switchMode.measuredHeight) / 2
         switchMode.layout(
-            menuWidth - paddingRight - switchMode.measuredWidth - context.dpToIntPx(16),
-            ((menuHeight - paddingBottom + btnHeight - switchMode.measuredHeight) / 2f).roundToInt(),
-            menuWidth - paddingRight - context.dpToIntPx(16),
-            (menuHeight - paddingBottom + btnHeight + switchMode.measuredHeight) / 2
+            right - defaultPadding - switchMode.measuredWidth,
+            usedHeight + deltaHSwitch,
+            right - defaultPadding,
+            usedHeight + deltaHSwitch + switchMode.measuredHeight
         )
     }
 
@@ -212,20 +226,20 @@ class ArticleSubmenu @JvmOverloads constructor(
     public override fun dispatchDraw(canvas: Canvas) {
         super.dispatchDraw(canvas)
         canvas.drawLine(
-            menuWidth / 2f,
             0f,
-            menuWidth / 2f,
-            paddingTop + btnHeight.toFloat(),
-            linePaint
-        )
-        canvas.drawLine(
-            0f,
-            paddingTop + btnHeight.toFloat(),
-            menuWidth.toFloat(),
-            paddingTop + btnHeight.toFloat(),
+            btnHeight.toFloat(),
+            canvas.width.toFloat(),
+            btnHeight.toFloat(),
             linePaint
         )
 
+        canvas.drawLine(
+            canvas.width / 2f,
+            0f,
+            canvas.width / 2f,
+            btnHeight.toFloat(),
+            linePaint
+        )
     }
 
     private class SavedState : BaseSavedState, Parcelable {

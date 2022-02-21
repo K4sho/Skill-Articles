@@ -9,8 +9,8 @@ import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 import ru.skillbranch.skillarticles.data.*
 import ru.skillbranch.skillarticles.extensions.format
-import ru.skillbranch.skillarticles.viewmodels.ArticleState
-import ru.skillbranch.skillarticles.viewmodels.ArticleViewModel
+import ru.skillbranch.skillarticles.viewmodels.article.ArticleState
+import ru.skillbranch.skillarticles.viewmodels.article.ArticleViewModel
 import ru.skillbranch.skillarticles.viewmodels.base.Notify
 import java.util.*
 import java.util.concurrent.TimeUnit
