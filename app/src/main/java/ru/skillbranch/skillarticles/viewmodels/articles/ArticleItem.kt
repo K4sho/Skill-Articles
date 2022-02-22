@@ -15,5 +15,6 @@ data class ArticleItem(
     val likeCount: Int,
     val commentCount: Int,
     val readDuration: Int,
-    val categoryId: String = ""
+    val categoryId: String = "",
+    val isBookmark: Boolean = false
 )
