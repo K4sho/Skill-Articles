@@ -1,12 +1,10 @@
 package ru.skillbranch.skillarticles.viewmodels.articles
 
-import IArticlesViewModel
 import android.util.Log
 import androidx.core.os.bundleOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavOptions
-import androidx.navigation.NavOptionsBuilder
 import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.data.repositories.ArticlesRepository
 import ru.skillbranch.skillarticles.viewmodels.BaseViewModel

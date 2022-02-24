@@ -1,10 +1,11 @@
-import ru.skillbranch.skillarticles.viewmodels.articles.ArticleItem
+package ru.skillbranch.skillarticles.viewmodels.articles
 
 interface IArticlesViewModel {
     /**
      * навигация к странице статьи
      **/
     fun navigateToArticle(articleItem: ArticleItem)
+
     /**
      * добавить/удалить из закладок статью
      **/

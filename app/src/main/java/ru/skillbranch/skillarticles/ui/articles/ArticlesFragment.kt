@@ -19,7 +19,7 @@ class ArticlesFragment :
     private var articlesAdapter: ArticlesAdapter? = null
 
     override fun renderUi(data: ArticlesState) {
-        TODO("Not yet implemented")
+        observeViewModelData()
     }
 
     override fun setupViews() {
@@ -45,7 +45,7 @@ class ArticlesFragment :
         articlesAdapter = null
     }
 
-    override fun observerViewModelData() {
+    override fun observeViewModelData() {
         viewModel.articles.observe(viewLifecycleOwner) {
             articlesAdapter?.submitList(it)
         }

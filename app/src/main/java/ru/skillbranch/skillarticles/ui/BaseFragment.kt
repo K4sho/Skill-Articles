@@ -27,7 +27,7 @@ abstract class BaseFragment<S, T : BaseViewModel<S>, B : ViewBinding>(@LayoutRes
     open fun setupActivityViews() {}
 
     // observer substates this if need
-    open fun observerViewModelData() {}
+    open fun observeViewModelData() {}
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
