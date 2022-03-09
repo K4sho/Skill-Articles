@@ -19,7 +19,7 @@ class ArticlesFragment :
     private var articlesAdapter: ArticlesAdapter? = null
 
     override fun renderUi(data: ArticlesState) {
-        observeViewModelData()
+        // TODO:
     }
 
     override fun setupViews() {
